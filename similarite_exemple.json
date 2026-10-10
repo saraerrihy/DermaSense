@@ -1,0 +1,49 @@
+{
+  "requete": {
+    "produit": "Crème de la Mer",
+    "marque": "LA MER",
+    "prix": 175
+  },
+  "similaires": [
+    {
+      "produit": "Crème de la Mer Mini",
+      "marque": "LA MER",
+      "cat": "Moisturizer",
+      "prix": 85,
+      "rank": 4.1,
+      "sim": 1.0
+    },
+    {
+      "produit": "Little Miss Miracle Limited-Edition Crème de la ",
+      "marque": "LA MER",
+      "cat": "Moisturizer",
+      "prix": 325,
+      "rank": 5.0,
+      "sim": 1.0
+    },
+    {
+      "produit": "The Tonic",
+      "marque": "LA MER",
+      "cat": "Cleanser",
+      "prix": 95,
+      "rank": 4.1,
+      "sim": 0.439
+    },
+    {
+      "produit": "The Cleansing Micellar Water",
+      "marque": "LA MER",
+      "cat": "Cleanser",
+      "prix": 95,
+      "rank": 4.5,
+      "sim": 0.411
+    },
+    {
+      "produit": "The Moisturizing Matte Lotion",
+      "marque": "LA MER",
+      "cat": "Moisturizer",
+      "prix": 270,
+      "rank": 3.9,
+      "sim": 0.384
+    }
+  ]
+}

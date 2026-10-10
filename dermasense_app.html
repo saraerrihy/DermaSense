@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DermaSense — Votre routine de soin par IA</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7B2D62">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+  :root{
+    --plum:#7B2D62; --plum-d:#5a2048; --rose:#C0567E; --peach:#E89A8D;
+    --gold:#F2C57C; --cream:#FDF8F4; --ink:#3a2433; --muted:#9b7f90;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}
+  body{background:linear-gradient(135deg,#FDF8F4 0%,#F8E8EE 100%);min-height:100vh;color:var(--ink)}
+  .page{display:none;min-height:100vh}
+  .page.active{display:flex}
+  /* ---------- AUTH ---------- */
+  .auth{align-items:center;justify-content:center;padding:24px}
+  .card{background:#fff;border-radius:22px;box-shadow:0 18px 50px rgba(123,45,98,.18);
+        padding:42px 38px;width:100%;max-width:430px}
+  .logo{text-align:center;margin-bottom:26px}
+  .logo h1{font-size:30px;color:var(--plum);letter-spacing:.5px}
+  .logo h1 span{color:var(--rose)}
+  .logo p{color:var(--muted);font-size:13.5px;margin-top:6px}
+  .tabs{display:flex;background:#f6ebf1;border-radius:12px;padding:4px;margin-bottom:24px}
+  .tabs button{flex:1;border:none;background:transparent;padding:10px;border-radius:9px;
+               cursor:pointer;font-size:14px;font-weight:600;color:var(--muted);transition:.2s}
+  .tabs button.on{background:var(--plum);color:#fff;box-shadow:0 4px 12px rgba(123,45,98,.3)}
+  label{display:block;font-size:12.5px;font-weight:600;color:var(--plum-d);margin:14px 0 5px}
+  input,select{width:100%;padding:11px 13px;border:1.5px solid #ecd9e4;border-radius:10px;
+               font-size:14px;background:#fdfafc;outline:none;transition:.2s}
+  input:focus,select:focus{border-color:var(--rose);box-shadow:0 0 0 3px rgba(192,86,126,.12)}
+  .row{display:flex;gap:12px}.row>div{flex:1}
+  .btn{width:100%;margin-top:24px;padding:13px;border:none;border-radius:12px;cursor:pointer;
+       background:linear-gradient(90deg,var(--plum),var(--rose));color:#fff;font-size:15px;
+       font-weight:700;letter-spacing:.3px;transition:.2s}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(123,45,98,.35)}
+  .err{color:#c0392b;font-size:12.5px;margin-top:10px;text-align:center;min-height:16px}
+  .hint{text-align:center;font-size:12px;color:var(--muted);margin-top:14px}
+  /* ---------- APP ---------- */
+  .app{flex-direction:column}
+  header{background:#fff;padding:16px 28px;display:flex;justify-content:space-between;
+         align-items:center;box-shadow:0 2px 14px rgba(123,45,98,.08);position:sticky;top:0;z-index:5}
+  header .brand{font-size:21px;font-weight:800;color:var(--plum)}
+  header .brand span{color:var(--rose)}
+  .profile-chip{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--plum-d)}
+  .avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--rose),var(--gold));
+          color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800}
+  .logout{border:1.5px solid #ecd9e4;background:#fff;border-radius:9px;padding:7px 14px;
+          cursor:pointer;color:var(--plum);font-weight:600;font-size:13px}
+  main{padding:30px clamp(16px,5vw,60px);max-width:1180px;margin:0 auto;width:100%}
+  .hello{margin-bottom:6px;font-size:25px;color:var(--plum-d)}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:22px}
+  .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:26px}
+  .chip{border:1.5px solid #e7cfdd;background:#fff;border-radius:999px;padding:8px 16px;
+        font-size:13px;cursor:pointer;color:var(--plum-d);font-weight:600;transition:.2s}
+  .chip.on{background:var(--plum);border-color:var(--plum);color:#fff}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:18px}
+  .prod{background:#fff;border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(123,45,98,.08);
+        display:flex;flex-direction:column;gap:8px;transition:.2s;border:1px solid #f4e4ec}
+  .prod:hover{transform:translateY(-3px);box-shadow:0 14px 30px rgba(123,45,98,.16)}
+  .cat{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--rose)}
+  .pname{font-size:15px;font-weight:700;line-height:1.35}
+  .pbrand{font-size:12.5px;color:var(--muted)}
+  .meta{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:10px}
+  .price{font-weight:800;color:var(--plum);font-size:15px}
+  .stars{font-size:12.5px;color:#b8860b}
+  .match{font-size:11.5px;font-weight:700;border-radius:8px;padding:4px 9px;width:fit-content}
+  .m-high{background:#e9f7ef;color:#1e7e46}.m-med{background:#fdf3e3;color:#b07c1f}
+  .banner{background:linear-gradient(90deg,var(--plum),var(--rose));color:#fff;border-radius:16px;
+          padding:18px 24px;margin-bottom:26px;font-size:14px;line-height:1.5}
+  .banner b{color:var(--gold)}
+  @media(max-width:560px){.row{flex-direction:column;gap:0}}
+
+  /* ---------- SIMILAIRES & CHATBOT ---------- */
+  .simbtn{border:none;background:#f6ebf1;color:var(--plum);border-radius:8px;
+          padding:6px 10px;font-size:11.5px;font-weight:700;cursor:pointer;width:fit-content}
+  .simbtn:hover{background:#eedaE6}
+  .simpanel{background:#fdf4f8;border:1px solid #f0dce8;border-radius:10px;
+            padding:8px 10px;font-size:12px;flex-direction:column;gap:7px}
+  .simscore{color:#1e7e46;font-weight:700}
+  #chatFab{position:fixed;bottom:22px;right:22px;width:58px;height:58px;border-radius:50%;
+           border:none;background:linear-gradient(135deg,var(--plum),var(--rose));color:#fff;
+           font-size:25px;cursor:pointer;box-shadow:0 10px 26px rgba(123,45,98,.4);z-index:60;display:none}
+  #chatWin{position:fixed;bottom:92px;right:22px;width:340px;max-width:92vw;height:450px;
+           background:#fff;border-radius:18px;box-shadow:0 18px 50px rgba(123,45,98,.3);
+           display:none;flex-direction:column;overflow:hidden;z-index:60}
+  #chatHead{background:linear-gradient(90deg,var(--plum),var(--rose));color:#fff;
+            padding:13px 16px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+  #chatBody{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;background:#fdf8fb}
+  .msg{max-width:85%;padding:9px 12px;border-radius:13px;font-size:13px;line-height:1.45;white-space:pre-line}
+  .msg.bot{background:#f3e3ec;color:var(--ink);border-bottom-left-radius:4px;align-self:flex-start}
+  .msg.user{background:var(--plum);color:#fff;border-bottom-right-radius:4px;align-self:flex-end}
+  #chatQuick{display:flex;gap:6px;flex-wrap:wrap;padding:0 12px 8px;background:#fdf8fb}
+  .qbtn{border:1px solid var(--rose);color:var(--plum);background:#fff;border-radius:999px;
+        font-size:11.5px;padding:5px 10px;cursor:pointer}
+  .qbtn:hover{background:#f6ebf1}
+  #chatForm{display:flex;border-top:1px solid #f0dce8}
+  #chatInput{flex:1;border:none;padding:12px;font-size:13px;outline:none}
+  #chatSend{border:none;background:var(--plum);color:#fff;padding:0 16px;cursor:pointer;font-size:16px}
+  /* ---------- MODALE PROFIL ---------- */
+  #profOverlay{position:fixed;inset:0;background:rgba(58,36,51,.45);display:none;
+               align-items:center;justify-content:center;z-index:70;padding:20px}
+  #profModal{background:#fff;border-radius:18px;padding:28px 26px;width:100%;max-width:400px;
+             box-shadow:0 22px 60px rgba(123,45,98,.35)}
+  #profModal h3{color:var(--plum);margin-bottom:4px}
+  #profModal .sub2{color:var(--muted);font-size:12.5px;margin-bottom:6px}
+  .btn2{width:100%;margin-top:18px;padding:11px;border:none;border-radius:11px;cursor:pointer;
+        background:linear-gradient(90deg,var(--plum),var(--rose));color:#fff;font-weight:700;font-size:14px}
+  .prod{position:relative}
+  .prod-img{width:100%;height:130px;border-radius:10px;display:flex;align-items:center;
+            justify-content:center;margin-bottom:4px;position:relative;overflow:hidden;flex-shrink:0}
+  .prod-img .prod-emoji{font-size:52px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,.12));
+                        pointer-events:none;user-select:none}
+  .prod-img .brand-tag{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.28);
+                       color:#fff;font-size:9px;font-weight:800;text-transform:uppercase;
+                       letter-spacing:.5px;padding:5px 8px;white-space:nowrap;overflow:hidden;
+                       text-overflow:ellipsis;backdrop-filter:blur(3px)}
+  .favbtn{position:absolute;top:8px;right:8px;border:none;background:rgba(255,255,255,.85);
+          color:#c9a8bc;width:30px;height:30px;border-radius:50%;font-size:15px;cursor:pointer;
+          transition:.2s;z-index:2;backdrop-filter:blur(4px)}
+  .favbtn.on{background:var(--rose);color:#fff;box-shadow:0 4px 10px rgba(192,86,126,.4)}
+  .natbadge{font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;width:fit-content}
+  .nat-high{background:#e9f7ef;color:#1e7e46}
+  .nat-mid{background:#fdf3e3;color:#b07c1f}
+  .nat-low{background:#f6e4e4;color:#a94442}
+  .quizlink{display:inline-block;margin-top:6px;font-size:11.5px;color:var(--rose);
+            font-weight:600;text-decoration:none}
+  .quizlink:hover{text-decoration:underline}
+  #quizOverlay{position:fixed;inset:0;background:rgba(58,36,51,.45);display:none;
+               align-items:center;justify-content:center;z-index:80;padding:20px}
+  #quizModal{background:#fff;border-radius:18px;padding:26px 24px;width:100%;max-width:430px;
+             max-height:90vh;overflow-y:auto;box-shadow:0 22px 60px rgba(123,45,98,.35)}
+  #quizModal h3{color:var(--plum);margin-bottom:4px}
+  .quizq{font-size:13px;font-weight:700;color:var(--plum-d);margin:14px 0 6px}
+  .quizopt{display:block;font-size:12.5px;margin:5px 0;cursor:pointer;font-weight:400}
+  .quizopt input{width:auto;margin-right:7px}
+  #quizRes{margin-top:12px;font-size:13px;font-weight:700;color:var(--plum);min-height:18px}
+  .histitem{border-bottom:1px solid #f4e4ec;padding:7px 0}
+  .warnbadge{font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;
+             width:fit-content;background:#fdeaea;color:#a94442}
+  .dupebadge{font-size:11px;font-weight:700;border-radius:8px;padding:3px 8px;
+             width:fit-content;background:#fff6e0;color:#9a6d00}
+  .cmpbtn{position:absolute;top:8px;right:44px;border:none;background:rgba(255,255,255,.85);
+          color:#c9a8bc;width:30px;height:30px;border-radius:50%;font-size:13px;cursor:pointer;
+          transition:.2s;z-index:2;backdrop-filter:blur(4px)}
+  .cmpbtn.on{background:var(--gold);color:#5a4500}
+  #cmpBar{position:fixed;bottom:22px;left:22px;background:var(--plum);color:#fff;border:none;
+          border-radius:999px;padding:12px 20px;font-weight:700;font-size:13px;cursor:pointer;
+          box-shadow:0 10px 26px rgba(123,45,98,.4);z-index:60;display:none}
+  #searchBox{border:1.5px solid #e7cfdd;border-radius:999px;padding:8px 16px;font-size:13px;
+             width:230px;background:#fff}
+  .ovl{position:fixed;inset:0;background:rgba(58,36,51,.45);display:none;
+       align-items:center;justify-content:center;z-index:80;padding:20px}
+  .mod{background:#fff;border-radius:18px;padding:26px 24px;width:100%;max-width:640px;
+       max-height:90vh;overflow-y:auto;box-shadow:0 22px 60px rgba(123,45,98,.35)}
+  .mod h3{color:var(--plum);margin-bottom:10px}
+  .mod textarea{width:100%;height:110px;border:1.5px solid #ecd9e4;border-radius:10px;
+                padding:10px;font-size:12.5px;resize:vertical}
+  .resbox{background:#fdf4f8;border-radius:12px;padding:12px 14px;margin-top:12px;font-size:13px}
+  .cmptable{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px}
+  .cmptable th,.cmptable td{border:1px solid #f0dce8;padding:7px 9px;text-align:center}
+  .cmptable th{background:#f6ebf1;color:var(--plum)}
+  .cmptable td:first-child{text-align:left;font-weight:600}
+  .statrow{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:12.5px}
+  .statrow .lab{width:130px;text-align:right;color:var(--plum-d);font-weight:600}
+  .statrow .barw{flex:1;background:#f6ebf1;border-radius:999px;height:16px;overflow:hidden}
+  .statrow .barf{height:100%;background:linear-gradient(90deg,var(--plum),var(--rose));
+                 border-radius:999px}
+  .statrow .val{width:60px;font-weight:700;color:var(--plum)}
+  .histitem b{color:var(--plum)}
+  .btncancel{width:100%;margin-top:8px;padding:10px;border:1.5px solid #ecd9e4;border-radius:11px;
+             cursor:pointer;background:#fff;color:var(--plum);font-weight:600;font-size:13px}
+  /* ---- DETAIL PRODUIT ---- */
+  #detailModal{max-width:700px}
+  .detail-img{width:160px;height:160px;border-radius:14px;overflow:hidden;flex-shrink:0}
+  .detail-img .prod-img{height:160px;border-radius:14px;margin:0}
+  .compat-tag{padding:5px 12px;border-radius:999px;font-size:12px;font-weight:700}
+  .ing-tag{display:inline-block;padding:2px 7px;border-radius:6px;font-size:11px;
+           margin:2px;background:#f6ebf1;color:var(--plum-d);cursor:default}
+  .ing-alert{background:#fdeaea;color:#a94442;font-weight:700}
+  .ing-irrit{background:#fff6e0;color:#9a6d00}
+  .ing-nat{background:#e9f7ef;color:#1e7e46}
+  /* ---- BUDGET SLIDER ---- */
+  .budget-row{display:flex;align-items:center;gap:12px;margin:-8px 0 18px;
+              background:#fff;border-radius:14px;padding:10px 16px;
+              box-shadow:0 2px 10px rgba(123,45,98,.07);border:1px solid #f4e4ec}
+  .budget-row label{font-size:12.5px;font-weight:700;color:var(--plum-d);white-space:nowrap}
+  .budget-row input[type=range]{flex:1;accent-color:var(--plum);height:4px;cursor:pointer}
+  .budget-row .bval{font-size:13px;font-weight:800;color:var(--plum);min-width:72px;text-align:right}
+  /* ---- PWA INSTALL BANNER ---- */
+  #pwaBanner{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);
+             background:linear-gradient(90deg,var(--plum),var(--rose));color:#fff;
+             border-radius:14px;padding:12px 18px;font-size:13px;font-weight:600;
+             box-shadow:0 10px 28px rgba(123,45,98,.4);display:none;align-items:center;
+             gap:12px;z-index:55;white-space:nowrap}
+  #pwaBanner button{border:none;background:rgba(255,255,255,.25);color:#fff;
+                    border-radius:9px;padding:6px 14px;font-weight:700;cursor:pointer;font-size:12px}
+  #pwaBanner .pwaX{background:none;padding:4px 8px;font-size:16px}
+  /* ---- ONBOARDING ---- */
+  #onbOverlay{position:fixed;inset:0;background:rgba(58,36,51,.55);
+              align-items:center;justify-content:center;z-index:90;padding:20px;display:none}
+  #onbModal{background:#fff;border-radius:22px;padding:36px 30px;width:100%;max-width:420px;
+            text-align:center;box-shadow:0 22px 60px rgba(123,45,98,.4)}
+  #onbModal h2{color:var(--plum);font-size:22px;margin-bottom:8px}
+  #onbModal p{color:var(--muted);font-size:13.5px;line-height:1.6;margin-bottom:20px}
+  /* ---- CHART.JS INSIGHTS ---- */
+  .chart-wrap{background:#fdf4f8;border-radius:14px;padding:14px;margin:10px 0}
+  .chart-wrap h4{color:var(--rose);font-size:13px;margin-bottom:8px}
+  .chart-wrap canvas{max-height:200px}
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE AUTH (LOGIN / SIGNUP) ================= -->
+<div class="page auth active" id="pageAuth">
+  <div class="card">
+    <div class="logo">
+      <h1>Derma<span>Sense</span></h1>
+      <p>Votre routine de soin personnalisée par Intelligence Artificielle</p>
+    </div>
+    <div class="tabs">
+      <button id="tabLogin" class="on" onclick="switchTab('login')">Connexion</button>
+      <button id="tabSignup" onclick="switchTab('signup')">Inscription</button>
+    </div>
+
+    <!-- LOGIN -->
+    <form id="formLogin" onsubmit="return doLogin(event)">
+      <label>Adresse e-mail</label>
+      <input type="email" id="liEmail" placeholder="vous@exemple.ma" required>
+      <label>Mot de passe</label>
+      <input type="password" id="liPass" placeholder="••••••••" required>
+      <button class="btn" type="submit">Se connecter</button>
+      <div class="err" id="liErr"></div>
+      <p class="hint">Compte de démonstration : demo@dermasense.ma / demo123</p>
+    </form>
+
+    <!-- SIGNUP -->
+    <form id="formSignup" style="display:none" onsubmit="return doSignup(event)">
+      <label>Nom complet</label>
+      <input type="text" id="suName" placeholder="Ex. Maryam Farhoune" required>
+      <label>Adresse e-mail</label>
+      <input type="email" id="suEmail" placeholder="vous@exemple.ma" required>
+      <label>Mot de passe (6 caractères min.)</label>
+      <input type="password" id="suPass" minlength="6" required>
+      <div class="row">
+        <div>
+          <label>Sexe</label>
+          <select id="suSexe" required>
+            <option value="">— Choisir —</option>
+            <option>Femme</option>
+            <option>Homme</option>
+          </select>
+        </div>
+        <div>
+          <label>Âge</label>
+          <input type="number" id="suAge" min="16" max="90" placeholder="Ex. 24" required>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Type de peau</label>
+          <select id="suPeau" required>
+            <option value="">— Choisir —</option>
+            <option value="0">Mixte</option>
+            <option value="1">Sèche</option>
+            <option value="2">Normale</option>
+            <option value="3">Grasse</option>
+            <option value="4">Sensible</option>
+          </select>
+          <a href="#" class="quizlink" onclick="openQuiz(event)">🔍 Je ne connais pas mon type → mini-quiz</a>
+        </div>
+        <div>
+          <label>Budget max (MAD)</label>
+          <input type="number" id="suBudget" min="50" max="2000" placeholder="Ex. 300" required>
+        </div>
+      </div>
+      <button class="btn" type="submit">Créer mon compte</button>
+      <div class="err" id="suErr"></div>
+    </form>
+  </div>
+</div>
+
+<!-- ================= PAGE RECOMMANDATIONS ================= -->
+<div class="page app" id="pageApp">
+  <header>
+    <div class="brand">Derma<span>Sense</span></div>
+    <div class="profile-chip">
+      <div class="avatar" id="avInit">M</div>
+      <div id="profInfo">—</div>
+      <button class="logout" onclick="openAnalyzer()">🧪 Analyser</button>
+      <button class="logout" onclick="openInsights()">📊 Insights</button>
+      <button class="logout" id="routineBtn" onclick="toggleView()">❤ Ma routine</button>
+      <button class="logout" onclick="openProfile()">⚙ Mon profil</button>
+      <button class="logout" onclick="logout()">Déconnexion</button>
+    </div>
+  </header>
+  <main>
+    <h2 class="hello" id="hello">Bonjour</h2>
+    <p class="sub" id="subline">Voici les soins sélectionnés par notre IA pour votre profil.</p>
+    <div class="banner" id="banner"></div>
+    <div class="filters" id="filters"></div>
+    <div style="display:flex;gap:12px;align-items:center;margin:-12px 0 14px;flex-wrap:wrap">
+      <input id="searchBox" placeholder="🔎 Rechercher un produit ou une marque…" oninput="render()">
+    </div>
+    <div class="budget-row">
+      <label>💰 Budget max :</label>
+      <input type="range" id="budgetSlider" min="0" max="370" step="5" value="370" oninput="updateBudgetSlider()">
+      <span class="bval" id="budgetVal">Tout</span>
+    </div>
+    <div class="grid" id="grid"></div>
+  </main>
+</div>
+
+
+<!-- ================= MODALE PROFIL ================= -->
+<div id="profOverlay" onclick="if(event.target===this) closeProfile()">
+  <div id="profModal">
+    <h3>⚙ Mon profil</h3>
+    <p class="sub2">Modifie tes informations : les recommandations sont recalculées instantanément.</p>
+    <form onsubmit="return saveProfile(event)">
+      <label>Nom complet</label>
+      <input type="text" id="pfName" required>
+      <div class="row">
+        <div>
+          <label>Sexe</label>
+          <select id="pfSexe" required>
+            <option>Femme</option>
+            <option>Homme</option>
+          </select>
+        </div>
+        <div>
+          <label>Âge</label>
+          <input type="number" id="pfAge" min="16" max="90" required>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Type de peau</label>
+          <select id="pfPeau" required>
+            <option value="0">Mixte</option>
+            <option value="1">Sèche</option>
+            <option value="2">Normale</option>
+            <option value="3">Grasse</option>
+            <option value="4">Sensible</option>
+          </select>
+        </div>
+        <div>
+          <label>Budget max (MAD)</label>
+          <input type="number" id="pfBudget" min="50" max="2000" required>
+        </div>
+      </div>
+      <label>Ingrédients à éviter (allergies, séparés par des virgules)</label>
+      <input type="text" id="pfAvoid" placeholder="Ex. parfum, alcool, limonene">
+      <button class="btn2" type="submit">Enregistrer</button>
+      <button class="btncancel" type="button" onclick="closeProfile()">Annuler</button>
+    </form>
+    <h3 style="margin-top:20px;font-size:15px">🕘 Historique des recommandations</h3>
+    <div id="histList" style="max-height:150px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<!-- ================= MODALE QUIZ PEAU ================= -->
+<div id="quizOverlay" onclick="if(event.target===this) closeQuiz()">
+  <div id="quizModal">
+    <h3>🔍 Mini-quiz : quel est mon type de peau ?</h3>
+    <p class="sub2" style="color:var(--muted);font-size:12px">4 questions, 30 secondes. Le résultat remplit automatiquement le formulaire.</p>
+    <div class="quizq">1. Une heure après le lavage du visage, ma peau…</div>
+    <label class="quizopt"><input type="radio" name="q1" value="1:2|4:1">tiraille, voire pèle par endroits</label>
+    <label class="quizopt"><input type="radio" name="q1" value="2:2">est confortable, ni grasse ni sèche</label>
+    <label class="quizopt"><input type="radio" name="q1" value="0:2">brille sur le front et le nez seulement</label>
+    <label class="quizopt"><input type="radio" name="q1" value="3:2">brille sur tout le visage</label>
+    <div class="quizq">2. En milieu de journée, ma peau…</div>
+    <label class="quizopt"><input type="radio" name="q2" value="1:2">ne brille jamais, paraît terne</label>
+    <label class="quizopt"><input type="radio" name="q2" value="0:2">brille un peu sur la zone T</label>
+    <label class="quizopt"><input type="radio" name="q2" value="3:2">brille uniformément</label>
+    <label class="quizopt"><input type="radio" name="q2" value="4:2">rougit ou chauffe facilement</label>
+    <div class="quizq">3. Mes pores…</div>
+    <label class="quizopt"><input type="radio" name="q3" value="1:1|2:1">sont quasi invisibles</label>
+    <label class="quizopt"><input type="radio" name="q3" value="0:2">sont visibles sur le nez et le front</label>
+    <label class="quizopt"><input type="radio" name="q3" value="3:2">sont dilatés sur tout le visage</label>
+    <label class="quizopt"><input type="radio" name="q3" value="4:2">peu importe : ma peau réagit vite (rougeurs)</label>
+    <div class="quizq">4. Quand j'essaie un nouveau produit…</div>
+    <label class="quizopt"><input type="radio" name="q4" value="2:2">aucun problème en général</label>
+    <label class="quizopt"><input type="radio" name="q4" value="4:3">picotements ou rougeurs fréquents</label>
+    <label class="quizopt"><input type="radio" name="q4" value="0:1|3:1">parfois des boutons sur la zone T</label>
+    <label class="quizopt"><input type="radio" name="q4" value="1:2">souvent une sensation de sécheresse</label>
+    <div id="quizRes"></div>
+    <button class="btn2" type="button" onclick="computeQuiz()">Voir mon résultat</button>
+    <button class="btncancel" type="button" onclick="closeQuiz()">Fermer</button>
+  </div>
+</div>
+
+<!-- ================= ANALYSEUR INCI ================= -->
+<div class="ovl" id="anaOverlay" onclick="if(event.target===this) closeM('anaOverlay')">
+  <div class="mod">
+    <h3>🧪 Analyser un produit par ses ingrédients</h3>
+    <p style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Colle la liste INCI (au dos de l'emballage ou sur la fiche produit), séparée par des virgules.</p>
+    <textarea id="anaInput" placeholder="Aqua, Glycerin, Niacinamide, Parfum, …"></textarea>
+    <button class="btn2" type="button" onclick="analyzeINCI()">Analyser</button>
+    <div id="anaRes"></div>
+    <button class="btncancel" type="button" onclick="closeM('anaOverlay')">Fermer</button>
+  </div>
+</div>
+
+<!-- ================= INSIGHTS ================= -->
+<div class="ovl" id="insOverlay" onclick="if(event.target===this) closeM('insOverlay')">
+  <div class="mod">
+    <h3>📊 Insights DermaSense</h3>
+    <div id="insBody"></div>
+    <button class="btncancel" type="button" onclick="closeM('insOverlay')">Fermer</button>
+  </div>
+</div>
+
+<!-- ================= COMPARATEUR ================= -->
+<div class="ovl" id="cmpOverlay" onclick="if(event.target===this) closeM('cmpOverlay')">
+  <div class="mod">
+    <h3>⚖ Comparateur de produits</h3>
+    <div id="cmpBody"></div>
+    <button class="btncancel" type="button" onclick="closeM('cmpOverlay')">Fermer</button>
+  </div>
+</div>
+<button id="cmpBar" onclick="openCompare()">⚖ Comparer (0)</button>
+
+<!-- ================= MODAL DÉTAIL PRODUIT ================= -->
+<div class="ovl" id="detailOverlay" onclick="if(event.target===this) closeM('detailOverlay')">
+  <div class="mod" id="detailModal"></div>
+</div>
+
+<!-- ================= ONBOARDING (premier démarrage) ================= -->
+<div id="onbOverlay">
+  <div id="onbModal">
+    <div style="font-size:48px;margin-bottom:8px">🌸</div>
+    <h2>Bienvenue sur DermaSense !</h2>
+    <p>Notre IA analyse votre profil de peau pour vous proposer des soins vraiment adaptés.<br>
+       <b>Prenez 30 secondes pour découvrir votre type de peau</b> — le résultat sera utilisé pour affiner vos recommandations.</p>
+    <button class="btn2" onclick="startOnboarding()">🔍 Faire le mini-quiz</button>
+    <button class="btncancel" style="margin-top:10px" onclick="skipOnboarding()">Passer, j'ai déjà rempli mon type de peau</button>
+  </div>
+</div>
+
+<!-- ================= PWA INSTALL BANNER ================= -->
+<div id="pwaBanner">
+  📲 Installer DermaSense sur votre appareil
+  <button onclick="pwInstall()">Installer</button>
+  <button class="pwaX" onclick="document.getElementById('pwaBanner').style.display='none'">✕</button>
+</div>
+
+<!-- ================= CHATBOT DERMABOT ================= -->
+<button id="chatFab" onclick="toggleChat()" title="DermaBot">💬</button>
+<div id="chatWin">
+  <div id="chatHead"><span>🌸 DermaBot — assistant soin</span>
+    <button onclick="toggleChat()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button></div>
+  <div id="chatBody"></div>
+  <div id="chatQuick"></div>
+  <form id="chatForm" onsubmit="return chatSubmit(event)">
+    <input id="chatInput" placeholder="Pose ta question…" autocomplete="off">
+    <button id="chatSend" type="submit">➤</button>
+  </form>
+</div>
+
+<script>
+/* =========================================================================
+   DermaSense — prototype front-end
+   Le score de recommandation reproduit la logique du modèle ML (modèle B) :
+   compatibilité type de peau (poids 2.2) + accessibilité budget (1.4)
+   + qualité produit Rank>=4.2 (0.9). Prix affichés en MAD (1 USD ~ 10 MAD).
+   ========================================================================= */
+const SKINS = ["Mixte","Sèche","Normale","Grasse","Sensible"];
+const CATS  = {"Moisturizer":"Hydratant","Cleanser":"Nettoyant","Face Mask":"Masque",
+               "Treatment":"Sérum & Traitement","Eye cream":"Contour des yeux","Sun protect":"Protection solaire"};
+/* Prix affichés = prix du dataset Cosmetics, repris tels quels en MAD
+   (3 à 370 MAD — tous sous la barre des 500 MAD) */
+function madPrice(v){ return Math.round(v); }
+
+const PRODUCTS = [{"c": "Cleanser", "b": "CLARISONIC", "n": "Refreshing Gel Cleanser", "p": 19, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 34}, {"c": "Cleanser", "b": "ERNO LASZLO", "n": "Pore Refining Detox Double Cleanse", "p": 55, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 66}, {"c": "Cleanser", "b": "KIEHL'S SINCE 1851", "n": "Epidermal Re-Texturizing Micro-Dermabrasion", "p": 41, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 35}, {"c": "Cleanser", "b": "SHISEIDO", "n": "Extra Rich Cleansing Milk", "p": 36, "r": 5.0, "k": [0, 1, 0, 0, 0], "nat": 51}, {"c": "Cleanser", "b": "CHARLOTTE TILBURY", "n": "Multi-Miracle Glow Cleansing Balm", "p": 60, "r": 4.9, "k": [1, 1, 1, 1, 1], "nat": 55}, {"c": "Cleanser", "b": "GO-TO", "n": "Exfoliating Swipeys", "p": 35, "r": 4.9, "k": [1, 1, 1, 1, 1], "nat": 46}, {"c": "Cleanser", "b": "CLINIQUE", "n": "Fresh Pressed Renewing Powder Cleanser (Vitamine C)", "p": 29, "r": 4.9, "k": [1, 1, 1, 1, 1], "nat": 47}, {"c": "Cleanser", "b": "SEPHORA COLLECTION", "n": "Cleansing Wipes - Pomegranate", "p": 7, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 50}, {"c": "Eye cream", "b": "FRESH", "n": "Crème Ancienne Supreme Eye Serum", "p": 165, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 90}, {"c": "Eye cream", "b": "BEAUTYBIO", "n": "Bright Eyes Collagen-Infused Brightening Eye Gels", "p": 40, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 53}, {"c": "Eye cream", "b": "PERRICONE MD", "n": "Neuropeptide Firming Under-Eye Cream", "p": 170, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 54}, {"c": "Eye cream", "b": "BIOEFFECT", "n": "EGF Eye Serum", "p": 90, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 59}, {"c": "Eye cream", "b": "ERNO LASZLO", "n": "Hello Bright Eyes", "p": 48, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 55}, {"c": "Eye cream", "b": "PEACE OUT", "n": "Puffy Under-Eye Patches", "p": 25, "r": 4.6, "k": [1, 1, 1, 1, 1], "nat": 62}, {"c": "Eye cream", "b": "BELIF", "n": "Moisturizing Eye Bomb", "p": 48, "r": 4.6, "k": [1, 1, 1, 1, 1], "nat": 59}, {"c": "Eye cream", "b": "WANDER BEAUTY", "n": "Baggage Claim Rose Gold Eye Masks", "p": 25, "r": 4.6, "k": [1, 1, 1, 1, 0], "nat": 61}, {"c": "Face Mask", "b": "SEPHORA COLLECTION", "n": "Face Mask Magic", "p": 25, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 55}, {"c": "Face Mask", "b": "FOREO", "n": "Make My Day Hydrating UFO™ Activated Mask", "p": 9, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 95}, {"c": "Face Mask", "b": "GLAMGLOW", "n": "BUBBLESHEET™ Oxygenating Deep Cleanse Mask", "p": 9, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 54}, {"c": "Face Mask", "b": "FOREO", "n": "H2Overdose Mask", "p": 19, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 50}, {"c": "Face Mask", "b": "DR ROEBUCK'S", "n": "Uluru Purifying Mask", "p": 28, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 77}, {"c": "Face Mask", "b": "LANCÔME", "n": "Energie de Vie Glow Boosting Mini Mask Trio", "p": 39, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 50}, {"c": "Face Mask", "b": "SEPHORA COLLECTION", "n": "Sleeping Mask - Coconut Water", "p": 4, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 55}, {"c": "Face Mask", "b": "OMOROVICZA", "n": "Midnight Radiance Mask", "p": 125, "r": 5.0, "k": [1, 0, 1, 1, 0], "nat": 61}, {"c": "Moisturizer", "b": "LANEIGE", "n": "Water Bank Dual Layer Face Oil", "p": 38, "r": 5.0, "k": [1, 1, 1, 0, 0], "nat": 50}, {"c": "Moisturizer", "b": "CLINIQUE", "n": "Dramatically Different™ Moisturizing Gel", "p": 39, "r": 5.0, "k": [1, 0, 0, 1, 0], "nat": 51}, {"c": "Moisturizer", "b": "ESTÉE LAUDER", "n": "Advanced Night Repair Intensive Recovery Ampoules", "p": 115, "r": 4.9, "k": [1, 1, 1, 1, 1], "nat": 82}, {"c": "Moisturizer", "b": "REN CLEAN SKINCARE", "n": "Evercalm™ Overnight Recovery Balm", "p": 48, "r": 4.9, "k": [1, 1, 1, 1, 1], "nat": 68}, {"c": "Moisturizer", "b": "YOUTH TO THE PEOPLE", "n": "Superberry Hydrate + Glow Oil", "p": 44, "r": 4.8, "k": [1, 1, 1, 0, 1], "nat": 95}, {"c": "Moisturizer", "b": "GO-TO", "n": "Face Hero", "p": 34, "r": 4.8, "k": [1, 1, 1, 1, 1], "nat": 95}, {"c": "Moisturizer", "b": "YOUTH TO THE PEOPLE", "n": "Adaptogen Deep Moisture Cream", "p": 58, "r": 4.8, "k": [1, 1, 1, 1, 1], "nat": 67}, {"c": "Moisturizer", "b": "DIOR", "n": "Capture Totale Multi-Perfection Crème", "p": 140, "r": 5.0, "k": [1, 1, 1, 0, 0], "nat": 50}, {"c": "Sun protect", "b": "SHISEIDO", "n": "Ultimate Sun Protection Lotion WetForce SPF 50+", "p": 22, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 34}, {"c": "Sun protect", "b": "SUPERGOOP!", "n": "Invincible Setting Powder SPF 45", "p": 20, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 42}, {"c": "Sun protect", "b": "COOLA", "n": "Sport Continuous Spray SPF 30", "p": 32, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 81}, {"c": "Sun protect", "b": "MOROCCANOIL", "n": "Sun Oil SPF 15", "p": 32, "r": 4.9, "k": [1, 1, 1, 0, 0], "nat": 50}, {"c": "Sun protect", "b": "LANCER", "n": "Sheer Fluid Sun Shield SPF 30", "p": 55, "r": 4.8, "k": [1, 1, 1, 1, 1], "nat": 47}, {"c": "Sun protect", "b": "SUPERGOOP!", "n": "Perfect Day 2-in-1 Everywear Lotion SPF 50", "p": 19, "r": 4.8, "k": [1, 1, 1, 1, 0], "nat": 50}, {"c": "Sun protect", "b": "COOLA", "n": "ER+ Radical Recovery After-Sun Lotion", "p": 32, "r": 4.8, "k": [1, 1, 1, 1, 1], "nat": 87}, {"c": "Sun protect", "b": "SHISEIDO", "n": "Future Solution LX Protective Cream SPF", "p": 260, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 44}, {"c": "Treatment", "b": "BIOEFFECT", "n": "EGF Serum", "p": 160, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 76}, {"c": "Treatment", "b": "MURAD", "n": "Active Retinol Renewal Kit", "p": 68, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 51}, {"c": "Treatment", "b": "DIOR", "n": "Capture Totale Dreamskin Advanced", "p": 128, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 50}, {"c": "Treatment", "b": "DR. DENNIS GROSS", "n": "Doctor's Kit Anti-Aging Solution", "p": 59, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 50}, {"c": "Treatment", "b": "BEAUTYBIO", "n": "The Nightly Retinol + Peptide Serum", "p": 95, "r": 5.0, "k": [1, 1, 1, 1, 1], "nat": 56}, {"c": "Treatment", "b": "ESTÉE LAUDER", "n": "Perfectionist Pro Rapid Firm + Lift Treatment", "p": 75, "r": 5.0, "k": [1, 1, 1, 1, 0], "nat": 55}, {"c": "Treatment", "b": "DIOR", "n": "Capture Youth Lift Sculptor Serum", "p": 95, "r": 5.0, "k": [0, 1, 1, 0, 0], "nat": 50}, {"c": "Treatment", "b": "LANCER", "n": "Younger® Pure Youth Serum", "p": 275, "r": 5.0, "k": [1, 1, 1, 0, 0], "nat": 46}];
+
+
+const SIMS = [[{"n": "Calendula Deep Clean Foaming Face Wash", "b": "KIEHL'S SINCE 1851", "p": 29, "s": 46}, {"n": "Rare Earth Deep Pore Daily Cleanser", "b": "KIEHL'S SINCE 1851", "p": 23, "s": 26}, {"n": "Max Sheer All Day Moisture Defense Lotion SPF ", "b": "PETER THOMAS ROTH", "p": 42, "s": 21}], [], [{"n": "Radiance Boost Walnut Grain & Orange Oil Exfol", "b": "BOBBI BROWN", "p": 51, "s": 30}, {"n": "Calm Cool & Corrected", "b": "DERMADOCTOR", "p": 85, "s": 30}, {"n": "Photo Dynamic Therapy Energizing Eye Renewal C", "b": "DERMADOCTOR", "p": 65, "s": 24}], [{"n": "Ibuki Purifying Cleanser", "b": "SHISEIDO", "p": 30, "s": 25}, {"n": "Ibuki Gentle Cleanser", "b": "SHISEIDO", "p": 30, "s": 23}, {"n": "One-Step Gentle Exfoliating Cleanser with Oran", "b": "CLARINS", "p": 38, "s": 21}], [{"n": "Goddess Clay Mask", "b": "CHARLOTTE TILBURY", "p": 55, "s": 49}, {"n": "Charlotte's Magic Cream", "b": "CHARLOTTE TILBURY", "p": 100, "s": 31}, {"n": "Charlotte's Magic Cream Mini", "b": "CHARLOTTE TILBURY", "p": 29, "s": 31}], [{"n": "Australian Pink Clay Porefining Face Mask", "b": "SAND & SKY", "p": 49, "s": 34}, {"n": "Instant Detox Mask", "b": "CAUDALIE", "p": 39, "s": 31}, {"n": "Time Retreat Eye Treatment", "b": "EVE LOM", "p": 75, "s": 25}], [{"n": "Fresh Pressed 7-day System with Pure Vitamin C", "b": "CLINIQUE", "p": 27, "s": 64}, {"n": "Cucumber Herbal Conditioning Cleanser", "b": "KIEHL'S SINCE 1851", "p": 24, "s": 25}, {"n": "Blue Herbal Acne Cleanser Treatment", "b": "KIEHL'S SINCE 1851", "p": 22, "s": 21}], [{"n": "Facial Cotton", "b": "SHISEIDO", "p": 10, "s": 100}, {"n": "Exfoliating Wipes - Charcoal - Detoxifying", "b": "SEPHORA COLLECTION", "p": 7, "s": 100}, {"n": "Prime Time BB Tinted Primer Broad Spectrum SP", "b": "BAREMINERALS", "p": 27, "s": 100}], [{"n": "Phoenix Cell Regenerating Facial Oil", "b": "HERBIVORE", "p": 88, "s": 26}, {"n": "Crème Ancienne® Eye Cream", "b": "FRESH", "p": 125, "s": 25}, {"n": "Seaberry Skin Nutrition Booster", "b": "FRESH", "p": 46, "s": 24}], [{"n": "Illuminating Bright Eyes Gels + Silky Mask Bea", "b": "BEAUTYBIO", "p": 25, "s": 100}, {"n": "Pack Your Bags Undereye Patches", "b": "TARTE", "p": 22, "s": 24}, {"n": "Therapeutic Sulfur Mask Acne Treatment Mask", "b": "PETER THOMAS ROTH", "p": 47, "s": 16}], [{"n": "Jelly Pack", "b": "J.ONE", "p": 42, "s": 29}, {"n": "Honey Drop Lightweight Moisturizer with Echina", "b": "FARMACY", "p": 45, "s": 21}, {"n": "Vital Treatment Essence for Hydrating", "b": "BLITHE", "p": 42, "s": 20}], [{"n": "30 Day Treatment", "b": "BIOEFFECT", "p": 290, "s": 81}, {"n": "EGF Serum", "b": "BIOEFFECT", "p": 160, "s": 81}, {"n": "EGF Day Serum", "b": "BIOEFFECT", "p": 145, "s": 59}], [{"n": "Multi-Task Eye Serum Mask", "b": "ERNO LASZLO", "p": 35, "s": 100}, {"n": "Brightening Infusion Hydrogel Mask", "b": "DR. JART+", "p": 7, "s": 35}, {"n": "Dermask Intra Jet Firming Solution™", "b": "DR. JART+", "p": 9, "s": 34}], [{"n": "Face Mask Magic", "b": "SEPHORA COLLECTION", "p": 25, "s": 34}, {"n": "Face Mask - Coconut - Nourishing", "b": "SEPHORA COLLECTION", "p": 6, "s": 27}, {"n": "Face Mask - Pearl - Brightening", "b": "SEPHORA COLLECTION", "p": 6, "s": 25}], [{"n": "The True Tincture Mask - Chamomile", "b": "BELIF", "p": 36, "s": 36}, {"n": "Witch Hazel Herbal Extract Toner", "b": "BELIF", "p": 28, "s": 35}, {"n": "Peat Miracle Revital Eye Cream", "b": "BELIF", "p": 58, "s": 32}], [{"n": "Baggage Claim Gold Eye Masks", "b": "WANDER BEAUTY", "p": 25, "s": 100}, {"n": "Protini™ Polypeptide Cream", "b": "DRUNK ELEPHANT", "p": 68, "s": 36}, {"n": "H2 Elemental Energy De-Puffing Eye Gel", "b": "PERRICONE MD", "p": 75, "s": 35}], [{"n": "Face Mask - Rose - Moisturizing", "b": "SEPHORA COLLECTION", "p": 6, "s": 63}, {"n": "Face Mask - Pineapple - Pore Perfecting", "b": "SEPHORA COLLECTION", "p": 6, "s": 61}, {"n": "Face Mask - Aloe Vera - Replenishing", "b": "SEPHORA COLLECTION", "p": 6, "s": 60}], [], [{"n": "BUBBLESHEET™ Oxygenating Deep Cleanse Mask - B", "b": "GLAMGLOW", "p": 9, "s": 96}, {"n": "Ultra Facial Cleanser", "b": "KIEHL'S SINCE 1851", "p": 20, "s": 26}, {"n": "3% Glycolic Solutions Cleanser", "b": "PETER THOMAS ROTH", "p": 38, "s": 24}], [], [{"n": "Tama Healing Mask", "b": "DR ROEBUCK’S", "p": 28, "s": 74}, {"n": "Face Mask - Green Tea - Mattifying", "b": "SEPHORA COLLECTION", "p": 6, "s": 24}, {"n": "Rare Earth Deep Pore Cleansing Masque", "b": "KIEHL'S SINCE 1851", "p": 33, "s": 23}], [{"n": "Énergie de Vie The Smoothing & Plumping Water-", "b": "LANCÔME", "p": 55, "s": 100}, {"n": "Hydra Zen Masque Anti-Stress Moisturizing Nigh", "b": "LANCÔME", "p": 48, "s": 100}, {"n": "MOUSSE RADIANCE Clarifying Self-Foaming Cleans", "b": "LANCÔME", "p": 32, "s": 100}], [{"n": "Sleeping Mask - Rose", "b": "SEPHORA COLLECTION", "p": 4, "s": 55}, {"n": "Sleeping Mask - Pearl", "b": "SEPHORA COLLECTION", "p": 4, "s": 48}, {"n": "Sleeping Mask - Coconut Water", "b": "SEPHORA COLLECTION", "p": 4, "s": 36}], [{"n": "Silver Skin Savior Salicylic/Glycolic Acid Tre", "b": "OMOROVICZA", "p": 125, "s": 31}, {"n": "Deep Cleansing Mask", "b": "OMOROVICZA", "p": 120, "s": 29}, {"n": "Drink of H2O Hydrating Boost Moisturizer Rainf", "b": "TARTE", "p": 39, "s": 27}], [{"n": "Essential Power Skin Toner for Combination to ", "b": "LANEIGE", "p": 28, "s": 57}, {"n": "Water Pocket Sheet Mask Water Bank (Moisturizi", "b": "LANEIGE", "p": 6, "s": 56}, {"n": "Eye Sleeping Mask", "b": "LANEIGE", "p": 34, "s": 49}], [{"n": "Limited Edition Dramatically Different Moistur", "b": "CLINIQUE", "p": 39, "s": 100}, {"n": "Dramatically Different Moisturizing Gel", "b": "CLINIQUE", "p": 28, "s": 29}, {"n": "Limited Edition Dramatically Different™ Moistu", "b": "CLINIQUE", "p": 39, "s": 29}], [{"n": "Advanced Night Repair Concentrated Recovery Ey", "b": "ESTÉE LAUDER", "p": 46, "s": 24}, {"n": "Seaberry Skin Nutrition Booster", "b": "FRESH", "p": 46, "s": 21}, {"n": "The Renewal Oil Mini", "b": "LA MER", "p": 130, "s": 20}], [{"n": "Potent-C™ Power Serum", "b": "PETER THOMAS ROTH", "p": 95, "s": 27}, {"n": "I-Waken Eye Serum", "b": "INDIE LEE", "p": 48, "s": 23}, {"n": "Seaberry Moisturizing Face Oil", "b": "FRESH", "p": 52, "s": 20}], [{"n": "Noni Radiant Eye Oil", "b": "KORA ORGANICS", "p": 38, "s": 26}, {"n": "Clarifying Mask", "b": "TATA HARPER", "p": 68, "s": 17}, {"n": "Make-Up Removing Cleansing Oil", "b": "CAUDALIE", "p": 28, "s": 15}], [{"n": "Phoenix Cell Regenerating Facial Oil", "b": "HERBIVORE", "p": 88, "s": 39}, {"n": "Bamboo Charcoal Detoxifying Soap Bar", "b": "HERBIVORE", "p": 12, "s": 38}, {"n": "Orchid Youth-Preserving Facial Oil", "b": "HERBIVORE", "p": 64, "s": 28}], [{"n": "OMG!™ Omega The Great Supplements", "b": "HUM NUTRITION", "p": 30, "s": 23}, {"n": "Hydrating Lip Mask", "b": "SEPHORA COLLECTION", "p": 3, "s": 18}, {"n": "Experiential Masks Set", "b": "SEPHORA COLLECTION", "p": 18, "s": 17}], [{"n": "Capture Totale 360 Light-Up Open-Up Replenishi", "b": "DIOR", "p": 110, "s": 100}, {"n": "Diorsnow Brightening Refining Moist Cloud Crèm", "b": "DIOR", "p": 125, "s": 100}, {"n": "Capture Totale Multi-Perfection Eye Treatment", "b": "DIOR", "p": 105, "s": 100}], [{"n": "Ultimate Sun Protection Lotion WetForce SPF 50", "b": "SHISEIDO", "p": 22, "s": 100}, {"n": "Ultimate Sun Protection Cream Broad Spectrum S", "b": "SHISEIDO", "p": 36, "s": 62}, {"n": "Sports BB Broad Spectrum SPF 50+ WetForce", "b": "SHISEIDO", "p": 38, "s": 60}], [{"n": "Acne Clearing Solution", "b": "MURAD", "p": 42, "s": 16}], [{"n": "Sport Continuous Spray SPF 30 - Unscented", "b": "COOLA", "p": 32, "s": 52}, {"n": "Sport Continuous Spray SPF 30 - Piña Colada", "b": "COOLA", "p": 36, "s": 44}, {"n": "Classic Sport SPF 50 - Fresh Mango", "b": "COOLA", "p": 32, "s": 29}], [], [{"n": "SUBLIME DEFENSE Ultra Lightweight UV Defense F", "b": "ALGENIST", "p": 28, "s": 33}, {"n": "Lift Serum Intense with Stem Cell Recovery Com", "b": "LANCER", "p": 275, "s": 29}, {"n": "Prismatic Luminizing Shield SPF 50", "b": "VOLITION BEAUTY", "p": 35, "s": 23}], [{"n": "Ultimate Sun Protection Spray Broad Spectrum S", "b": "SHISEIDO", "p": 36, "s": 76}, {"n": "Sunscreen Cream High Protection SPF 30", "b": "CLARINS", "p": 36, "s": 16}, {"n": "Acne Solutions BB Cream Broad Spectrum SPF 40", "b": "CLINIQUE", "p": 39, "s": 16}], [{"n": "Down Under Collagen Boosting Eye Treatment", "b": "DR ROEBUCK’S", "p": 38, "s": 23}, {"n": "Tama Healing Mask", "b": "DR ROEBUCK’S", "p": 28, "s": 23}, {"n": "Moon Fruit Superfruit Night Treatment", "b": "HERBIVORE", "p": 58, "s": 22}], [{"n": "Future Solution LX Eye and Lip Contour Regener", "b": "SHISEIDO", "p": 150, "s": 70}, {"n": "Future Solution LX Total Protective Cream Broa", "b": "SHISEIDO", "p": 260, "s": 49}, {"n": "Future Solution LX Intensive Firming Contour S", "b": "SHISEIDO", "p": 300, "s": 47}], [{"n": "30 Day Treatment", "b": "BIOEFFECT", "p": 290, "s": 100}, {"n": "EGF Eye Serum", "b": "BIOEFFECT", "p": 90, "s": 81}, {"n": "EGF Day Serum", "b": "BIOEFFECT", "p": 145, "s": 58}], [{"n": "Retinol Youth Renewal Night Cream", "b": "MURAD", "p": 82, "s": 80}, {"n": "Retinol Youth Renewal Eye Serum", "b": "MURAD", "p": 85, "s": 76}, {"n": "Retinol Youth Renewal Serum", "b": "MURAD", "p": 88, "s": 68}], [{"n": "Capture Totale 360 Light-Up Open-Up Replenishi", "b": "DIOR", "p": 110, "s": 100}, {"n": "Diorsnow Brightening Refining Moist Cloud Crèm", "b": "DIOR", "p": 125, "s": 100}, {"n": "Capture Totale Multi-Perfection Eye Treatment", "b": "DIOR", "p": 105, "s": 100}], [], [{"n": "Backlight Priming Filter Face Primer", "b": "BECCA", "p": 38, "s": 29}, {"n": "Pumpkin Enzyme Mask Enzymatic Dermal Resurface", "b": "PETER THOMAS ROTH", "p": 58, "s": 22}, {"n": "The Indigo Cream Soothing Skin Protectant", "b": "TATCHA", "p": 85, "s": 19}], [{"n": "Perfectionist CP+R Wrinkle Lifting/Firming Ser", "b": "ESTÉE LAUDER", "p": 98, "s": 38}, {"n": "Sculptwear Contouring Massage Cream Mask", "b": "CLINIQUE", "p": 46, "s": 35}, {"n": "Fresh Pressed Daily Booster with Pure Vitamin ", "b": "CLINIQUE", "p": 19, "s": 35}], [{"n": "Diorsnow Brightening Refining Moist Cloud Crèm", "b": "DIOR", "p": 125, "s": 100}, {"n": "Capture Totale 360 Light-Up Open-Up Replenishi", "b": "DIOR", "p": 110, "s": 100}, {"n": "Capture Totale Multi-Perfection Eye Treatment", "b": "DIOR", "p": 105, "s": 100}], [{"n": "DermalQuench Liquid Lift™ + Retinol Advanced R", "b": "KATE SOMERVILLE", "p": 98, "s": 35}, {"n": "#NAME?", "b": "KATE SOMERVILLE", "p": 85, "s": 33}, {"n": "Caviar Lime Acid Peel", "b": "LANCER", "p": 90, "s": 29}]];
+
+const INGT = [["water", "glycerin", "coco-betaine", "sodium cocoyl glycinate", "peg-120", "methyl glucose dioleate", "sodium chloride dipropylene glycol", "lauric acid", "triethanolamine", "phenoxyethanol", "fragrance", "caprylyl glycol", "linalool", "limonene", "benzyl benzoate", "tetrasodium edta", "argilla/magnesium aluminum silicate"], ["water", "propanediol", "sodium c14-16 olefin sulfonate", "oryza sativa (rice) extract", "phenoxyethanol", "acrylates/c10-30 alkyl acrylate crosspolymer", "sodium hydroxide", "cyclopentasiloxane", "dimethicone/vinyl dimethicone crosspolymer", "mica", "titanium dioxide (ci 77891)", "ethylhexylglycerin", "disodium edta", "fragrance (parfum)", "charcoal powder", "1", "2-hexanediol", "agar", "calcium alginate", "xanthan gum", "aloe barbadensis leaf juice", "citrus grandis (grapefruit) peel oil", "helianthus annuus (sunflower) seed oil", "propylene glycol", "ananas sativus (pineapple) fruit extract"], ["water", "alumina", "paraffinum liquidum/mineral oil", "glycerin", "dimethicone", "butyrospermum parkii/shea butter", "peg-100 stearate", "stearyl alcohol", "glyceryl stearate", "solum diatomeae/diatomaceous earth", "ammonium polyacryloyl-dimethyl taurate", "phenoxyethanol", "methylparaben", "butylparaben", "epilobium angustifolium/epilobium angustifolium extract", "disodium edta", "hydrolyzed algin"], ["water", "sodium methyl cocoyl taurate", "cocamidopropyl betaine", "peg-2 laurate", "glycol distearate", "propylene glycol laurate", "glycerin", "dipropylene glycol", "polyquaternium-10", "phenoxyethanol", "sodium benzoate", "fragrance", "citric acid", "water", "oryza sativa (rice) germ oil", "disodium edta", "linalool", "geraniol", "citronellol", "alcohol", "betaine", "yellow 6 (ci 15985)", "sodium acetylated hyaluronate", "citrus junos seed extract", "tocopherol"], ["glycerin", "water", "caprylic/capric triglyceride", "cyclopentasiloxane", "sucrose stearate", "phenyl trimethicone", "phenoxyethanol", "microcrystalline cellulose", "ethylhexylglycerin", "chlorphenesin", "cellulose gum", "xanthan gum", "fragrance (parfum)", "camellia oleifera seed oil", "rosa canina fruit oil", "peg-8", "helianthus annuus (sunflower) seed oil", "tocopherol", "ascorbyl tetraisopalmitate", "rubus chamaemorus seed oil", "tocopheryl acetate", "vaccinium macrocarpon (cranberry) seed oil", "retinyl palmitate", "ascorbyl palmitate", "ascorbic acid"], ["water", "lactic acid", "aloe vera", "ethanol", "propanediol", "polysorbate 20", "fragrance (natural mandarin and lemon)", "dehydroacetic acid", "benzyl alcohol", "sodium citrate", "potassium sorbate"], ["maltodextrin", "sodium lauryl sulfoacetate", "sodium cocoyl isethionate", "sodium methyl cocoyl taurate", "kaolin", "ascorbic acid", "sodium chloride", "sapindus mukurossi peel extract", "salicylic acid", "allyl methacrylates crosspolymer", "cyclodextrin", "coconut acid", "ethylbisiminomethylguaiacol manganese chloride", "water", "disodium edta"], ["no info"], ["limnanthes alba (meadowfoam) seed oil", "simmondsia chinensis (jojoba) seed oil", "triticum vulgare (wheat) germ oil", "ribes nigrum (black currant) seed oil", "hippophae rhamnoides oil", "commiphora mukul resin extract", "helianthus annuus (sunflower) seed oil", "rosmarinus officinalis (rosemary) leaf extract", "ascorbyl palmitate", "caprylic/capric triglyceride", "dipalmitoyl hydroxyproline", "palmitic acid"], ["water", "glycerin", "colloidal silver", "propylene glycol", "betaine", "hamamelis virginiana extract", "chondrus crispus powder", "mica", "niacinamide", "glucomannan", "xanthan gum", "aloe yohjyu matsu ekisu", "hydrolyzed collagen", "phenoxyethanol", "diazolidinyl urea", "algin", "potassium chloride", "citric acid", "potassium citrate", "sodium hyaluronate", "pearl powder", "iodopropynyl butylcarbamate", "fragrance"], ["water", "butylene glycol", "glycerin", "dimethicone", "cyclopentasiloxane", "stearic acid", "niacinamide", "1", "2-hexanediol", "cetearyl alcohol", "sucrose distearate", "cyclohexasiloxane", "caprylic/capric triglyceride", "behenic acid", "polyglyceryl-10 myristate", "cetyl ethylhexanoate", "simmondsia chinensis (jojoba) seed oil", "macadamia ternifolia seed oil", "argania spinosa kernel oil", "titanium dioxide", "dipeptide-2", "palmitoyl tetrapeptide-7", "acetyl tetrapeptide-9", "ceramide np", "phytosteryl isostearate"], ["water", "glycerin", "butylene glycol", "carbomer", "sodium chloride", "phenoxyethanol", "sodium citrate", "sodium dehydroacetate", "sodium hyaluronate", "hordeum vulgare seed extract", "egf (barley sh-oligopeptide-1)"], ["water", "glycerin", "butylene glycol", "niacinamide", "ceratonia siliqua gum", "chondrus crispus (carrageenan) extract", "allantoin", "peg-60 hydrogenated castor oil", "centella asiatica extract", "ethylhexylglycerin", "saccharide isomerate", "disodium edta", "dipotassium glycyrrhizate", "1", "2-hexanediol", "sodium citrate", "sodium hyaluronate", "citric acid", "potassium hydroxide", "chlorella vulgaris extract", "fragrance", "phenoxyethanol"], ["water", "butylene glycol", "glycerin", "hydroxyacetophenone", "1", "2-hexanediol", "betaine", "caffeine", "peg-40 hydrogenated castor oil", "pvp", "niacinamide", "tetrahydroxypropyl ethylenediamine", "carbomer", "sodium pca", "xanthan gum", "cocos nucifera (coconut) oil", "prunus amygdalus dulcis (sweet almond) seed extract", "tocopheryl acetate", "fragrance", "passiflora edulis fruit extract", "phenoxyethanol", "gardenia taitensis flower", "mesembryanthemum crystallinum callus extract", "tocopherol"], ["water", "dipropylene glycol", "butylene glycol", "glycerin", "squalane", "cyclopentasiloxane", "caprylyl trimethicone", "dimethicone", "hdi/trimethylol hexyllactone crosspolymer", "sucrose polystearate", "1", "2-hexanediol", "pca dimethicone", "panthenol", "triethylhexanoin", "cellulose", "ceramide np", "centella asiatica leaf extract", "avena sativa (oat) kernel extract*", "calendula officinalis flower extract*", "nepeta cataria extract*", "rubus idaeus (raspberry) leaf extract*", "baptisia tinctoria root extract*", "stellaria media (chickweed) extract*", "alchemilla vulgaris leaf extract**"], ["water", "glycerin", "butylene glycol", "1", "2-hexanediol", "aloe barbadensis leaf juice", "xanthan gum", "polyglyceryl-4 caprate", "panthenol", "hydroxyethylcellulose", "portulaca oleracea extract", "calendula officinalis flower extract", "myrciaria dubia fruit extract", "butyrospermum parkii (shea) butter", "ethylhexylglycerin", "disodium edta", "scutellaria baicalensis root extract", "glyceryl caprylate", "sodium hyaluronate", "tocopheryl acetate", "simmondsia chinensis (jojoba) seed oil", "lavandula angustifolia (lavender) oil", "lecithin", "cyclopentasiloxane", "hydrogenated lecithin"], ["coconut face mask: water", "butylene glycol", "glycerin", "betaine", "mannitol", "1", "2-hexanediol", "hydroxyacetophenone", "saccharide isomerate", "xanthan gum", "ammonium glycyrrhizate", "chenopodium quinoa seed extract", "peg-40 hydrogenated castor oil", "fragrance", "caffeine", "zinc gluconate", "cocos nucifera (coconut) fruit extract", "phenoxyethanol", "cocos nucifera (coconut) oil", "citric acid", "aesculus hippocastanum (horse chestnut) seed extract", "sodium citrate", "potassium sorbate", "sodium benzoate", "gardenia tahitensis flower"], ["-hyaluronic acid -red algae"], ["water", "glycerin", "methyl perfluorobutyl ether", "acrylates copolymer", "cocamidopropyl betaine", "disodium cocoamphodiacetate", "lauryl glucoside", "retinyl palmitate", "allantoin", "arginine", "camellia sinensis leaf extract", "helianthus annuus (sunflower) seed oil", "ascorbyl glucoside", "ethylhexylglycerin", "ceramide np", "sodium pca", "sodium chloride", "saccharide isomerate", "polyquaternium-10", "potassium cocoyl glycinate", "potassium cocoate", "hexylene glycol", "butylene glycol", "citric acid", "hydroxyethyl urea"], ["-hyaluronic acid -ceramide"], ["water", "kaolin", "quartz", "hematite powder", "kaolin", "iron hydroxide", "aluminum hydroxide", "quartz", "glycerin", "helianthus annuus (sunflower) seed oil", "simmondsia chinensis (jojoba) seed oil", "caprylic/capric triglyceride", "cetearyl glucoside", "cetearyl alcohol", "ceteareth-20", "cetearyl olivate", "sorbitan olivate", "dehydroacetic acid & benzyl alcohol", "purified water & glycerine &terminalia ferdinandiana (kakadu plums) fruit extract & citric acid & potassium sorbate & sodium benzoate", "canola oil", "castor oil", "polyhydroxystearic acid", "candleilla wax", "sunflower wax", "tocopheryl acetate"], ["visit the lancôme boutique"], ["water", "butylene glycol", "glycerin", "betaine", "phenoxyethanol", "acrylates/c10-30 alkyl acrylate crosspolymer", "tremella fuciformis (mushroom) extract", "ethylhexylglycerin", "sodium hydroxide", "barosma betulina leaf extract", "peg-40 hydrogenated castor oil", "sodium hyaluronate", "fragrance", "camellia sinensis leaf extract", "citric acid", "linalool", "potassium sorbate", "sodium benzoate", "ci 19140 (yellow 5)", "ci 42090 (blue 1)"], ["water", "glycerin", "propanediol", "alcohol denat", "yeast extract", "sodium levulinate", "sclerotium gum", "carbomer", "chondrus crispus powder (carrageenan)", "sodium anisate", "ethylhexylglycerin", "kaolin", "benzyl alcohol", "salix nigra (willow) bark extract", "caprylyl/capryl glucoside", "salicylic acid", "sodium hydroxide", "parfum (fragrance)", "copper gluconate", "sodium hyaluronate", "phospholipids", "leuconostoc/radish root ferment filtrate", "benzyl salicylate", "linalool", "limonene"], ["water", "caprylic/capric triglyceride", "squalane", "vitis vinifera (grape) seed oil", "decyl cocoate", "dicaprylyl carbonate", "triethylhexanoin", "glycerin", "passiflora incarnata seed oil", "macadamia ternifolia seed oil", "chenopodium quinoa seed extract", "magnesium sulfate", "zinc sulfate", "manganese sulfate", "tocopherol", "calcium chloride", "sodium chloride", "alcohol", "xanthan gum", "ascorbyl glucoside", "disodium edta", "phenoxyethanol", "ethylhexylglycerin", "fragrance"], ["water", "mineral oil/paraffinum liquidum/huile minerale", "glycerin", "petrolatum", "stearic acid", "glyceryl stearate", "sesamum indicum (sesame) oil", "urea", "lanolin alcohol", "triethanolamine", "hordeum vulgare (barley) extract/extrait d'orge", "cucumis sativus (cucumber) fruit extract", "helianthus annuus (sunflower) seedcake", "propylene glycol dicaprate", "sodium hyaluronate", "butylene glycol", "pentylene glycol", "trisodium edta", "phenoxyethanol", "yellow 6 (ci 15985)", "yellow 5 (ci 19140)", "red 33 (ci 17200)"], ["advanced night rpr int rcv ampoule division: el (estee lauder)ingredients: caprylic/capric triglyceride", "squalane", "aleurites moluccana (kukui) seed oil", "prunus armeniaca (apricot) kernel oil", "bisabolol", "garcinia mangostana peel extract", "salicornia herbacea extract", "magnolia officinalis bark extract", "salvia hispanica seed extract", "anthemis nobilis (chamomile) flower extract", "rosmarinus officinalis (rosemary) leaf extract", "coffea arabica (coffee) seed extract", "helianthus annuus (sunflower) seed oil", "camelina sativa seed oil", "vaccinium myrtillus seed oil", "tocopheryl acetate", "cholesterol", "linoleic acid", "tetrahexyldecyl ascorbate", "bht"], ["coco-caprylate/caprate", "glycerin", "water", "almond/borage/linseed/olive acids/glycerides", "polyglyceryl-6 distearate", "jojoba esters", "oryza sativa starch", "cetyl alcohol", "glyceryl stearate", "helianthus annuus (sunflower) seed oil unsaponifiables", "glyceryl caprylate", "polyglyceryl-3 beeswax", "sodium stearoyl glutamate", "benzyl alcohol", "parfum (fragrance)", "hippophae rhamnoides oil", "tocopherol", "magnesium carboxymethyl beta-glucan", "dehydroacetic acid", "eclipta prostrata extract", "eclipta prostrata leaf extract", "moringa oleifera seed oil", "helianthus annuus (sunflower) seed oil", "rosmarinus officinalis leaf extract", "citronellol"], ["helianthus annuus (sunflower) seed oil*", "dicapryl carbonate", "simmondsia chineses (jojoba) seed oil*", "opuntia tuna extract(prickly pear)", "euterpe oleracea fruit extract (acai)", "lycium barbarum (goji) extract", "aristotelia chilensis (maqui) fruit extract", "and moringa oleifera leaf extract", "squalane olive", "mixed tocopherols (vitamin e)", "olea europaea (olive) oil*", "linum usitatissimum (flaxseed) oil*", "borago officinalis (borage) oil*", "rosa canina (rosehip) fruit oil*", "oenothera biennis (evening primrose) oil*", "punica granatum (pomegranate) seed oil*", "vaccinium macrocarpon (cranberry) seed oil*", "natural fragrance. *certified organic"], ["almond oil", "jojoba oil", "macadamia oil", "brazil nut oil", "evening primrose oil", "buriti oil", "arnica oil", "rosehip oil", "calendula oil", "kiwi fruit seed oil", "tocopherol (vitamin e)", "totarol", "rosemary leaf extract", "natural fragrance (orange blossom & rose gardenia.)"], ["purified water", "helianthus annuus (sunflower) oil", "octyl palmitate", "glyceryl stearate", "propanediol", "stearic acid", "rhodiola rosea", "ocimum tenuiflorum (holy basil)", "withania somnifera (ashwagandha)", "ganoderma lucidum (reishi mushroom)", "aloe barbadensis leaf juice", "glyceryl mono laurate", "squalane (olive)", "phenoxyethanol", "simmondsia chineses (jojoba) seed oil", "pentapeptide-59", "hydrogenated lecithin", "butyrospermum parkii (shea) butter", "phenethyl alcohol", "ethylhexylglycerin", "maltodextrin", "carbomer", "mixed tocopherols", "ethylhexylglycerin", "allantoin"], ["visit the dior boutique"], ["water", "dimethicone", "sd alcohol 40-b", "talc", "methyl methacrylate crosspolymer", "isododecane", "cetyl ethylhexanoate", "diisopropyl sebacate", "triethylhexanoin", "lauryl peg-9 polydimethylsiloxyethyl dimethicone", "glycerin", "dextrin palmitate", "sucrose tetrastearate triacetate", "polybutylene glycol/ppg-9/1 copolymer", "trimethylsiloxysilicate", "xylitol", "silica", "sodium chloride", "peg/ppg-14/7 dimethyl ether", "saxifraga sarmentosa extract", "sophora angustifolia root extract", "disteardimonium hectorite", "isostearic acid", "calcium stearate", "trisodium edta"], ["calcium aluminum borosilicate", "silica", "polymethyl methacrylate", "ethylhexylglycerin", "triethoxycaprylysilane", "nylon-6/12", "sodium dehydroacetate", "olive glycerides", "ascorbyl palmitate", "ceramide 3. may contain (+/-): iron oxides (ci 77492", "77491", "77499)", "titanium dioxide (ci 77891)"], ["alcohol (organic)", "algae (organic) extract", "aloe barbadensis (organic) leaf extract", "butyloctyl salicylate", "cucumis sativus (organic cucumber) fruit extract", "fragaria vesca (organic strawberry) fruit extract", "glycerin (organic)", "va/butyl maleate/isobornyl acrylate copolymer", "water"], [], ["cyclopentasiloxane", "water", "alcohol", "denat", "glycerin", "polymethyl methacrylate", "polyglyceryl-3 polydimethylsiloxyethyl dimethicone", "peg/ppg-18/18 dimethicone", "vitis vinifera (grape) fruit cell extract", "zingiber officinale (ginger) root extract", "tropaeolum majus extract", "helianthus annuus (sunflower) sprout extract", "bisabolol", "tocopherol", "lecithin", "peg-9 polydimethylsiloxyethyl dimethicone", "triethoxysilylethyl polydimethylsiloxyethyl hexyl dimethicone", "benzylidene dimethoxydimethylindanone", "isomalt", "hexylene glycol", "caprylyl glycol", "ethylhexylglycerin", "phenoxyethanol"], ["-homosalate 10%", "octinoxate 7.5%", "octisalate 5%", "and avobenzone 3% deliver broad-spectrum sun protection"], ["water", "helianthus annuus (sunflower) seed oil*", "aloe barbadensis (aloe vera) leaf juice*", "cetearyl alcohol", "glycerin", "caprylic/capric triglyceride", "cetearyl glucoside", "saccharomyces/agave americana leaf ferment filtrate*", "cetyl palmitate", "lavandula angustifolia (lavender) flower oil*", "citrus sinensis (sweet orange) peel oil", "citrus reticulata (mandarin red) peel oil", "rosmarinus officinalis (rosemary) leaf oil", "cedrus atlantica (cedar) wood oil", "xanthan gum", "rosmarinus officinalis (rosemary) leaf extract*", "dehydroacetic acid", "benzyl alcohol. *certified organic"], ["dipropylene glycol", "glycerin", "dimethicone", "butylene glycol", "xylitol", "piperidinepropionic acid", "petrolatum", "mineral oil(paraffinum liquidum/huile minerale)", "diisostearyl malate", "myristyl myristate", "pentaerythrityl tetrabehenate/benzoate/ethylhexanoate", "behenyl alcohol", "glyceryl stearate se", "stearyl alcohol", "pentaerythrityl tetraethylhexanoate", "batyl alcohol", "dimethicone crosspolymer", "beheneth-20", "phenoxyethanol", "dimethylacrylamide/sodium acryloyldimethyltaurate crosspolymer", "fragrance", "sorbitan tristearate", "sodium methyl stearoyl taurate", "peg/ppg-17/4 dimethyl ether", "tocopheryl acetate"], ["glycerin", "water", "sodium hyaluronate", "tromethamine", "sodium chloride", "hordeum vulgare seed extract", "egf (barley sh-oligopeptide-1)"], ["retinol youth renewal serum: water", "cyclopentasiloxane", "isopropyl palmitate", "c14-22 alcohols", "polymethylsilsesquioxane", "dimethicone", "propanediol", "glyceryl stearate", "peg-100 stearate", "shea butter ethyl esters", "retinol", "hydroxypinacolone retinoate", "ceramide np", "sodium hyaluronate", "solanum lycopersicum (tomato) fruit extract", "swertia chirata extract", "squalane", "punica granatum extract", "tocopheryl acetate", "glycine soja (soybean) extract", "urea", "yeast amino acids", "trehalose", "inositol", "taurine"], ["visit the dior boutique"], [], ["water", "ethylhexyl palmitate", "glycerin", "peg-40 hydrogenated castor oil", "caprylic/capric triglyceride", "sodium hyaluronate", "bisabolol", "leontopodium alpinum meristem cell culture", "dimethyl isosorbide", "panthenol", "tetrahexyldecyl ascorbate", "amorphophallus konjac root powder", "leuconostoc/radish root ferment filtrate", "commiphora mukul resin extract", "tocopherol", "allantoin", "hydroxypinacolone retinoate", "palmitoyl tripeptide-28", "disodium edta", "carbomer", "trihydroxystearin", "aminomethyl propanol", "phenoxyethanol", "xanthan gum", "silica"], ["perfectionist pro rpd frm+lift trt division: el (estee lauder)ingredients: water", "dimethicone", "butylene glycol", "caprylic/capric triglyceride", "glycerin", "bis-peg-18 methyl ether dimethyl silane", "polysorbate 20", "lauryl peg-9 polydimethylsiloxyethyl dimethicone", "polysilicone-11", "mangifera indica (mango) seed butter", "phoenix dactylifera (date) fruit extract", "pisum sativum (pea) extract", "cucumis sativus (cucumber) fruit extract", "crithmum maritimum extract", "laminaria ochroleuca extract", "commiphora mukul resin extract", "triticum vulgare (wheat) germ extract", "bambusa vulgaris (bamboo) extract", "chlorella vulgaris extract", "laminaria saccharina extract", "brassica campestris (rapeseed) sterols", "helianthus annuus (sunflower) seed extract", "algae extract", "hypnea musciformis (algae) extract", "sigesbeckia orientalis (st. paul's wort) extract"], ["visit the dior boutique"], ["water", "aloe barbadensis leaf extract", "dimethyl isosorbide", "glycolic acid", "glyceryl stearate", "peg-100 stearate", "neopentyl glycol diethylhexanoate", "sodium hydroxide", "caprylic/capric triglyceride", "propanediol", "cetyl alcohol polymethylsilsesquioxane", "hdi/trimethylol hexyllactone crosspolymer", "hydroxyethylacrylate", "sodium acryloyldimethyl taurate copolymer", "glycerin", "butylene glycol", "cyclopentasiloxane", "cyclohexasiloxanehydroxyethylacrylate", "sodium acryloyldimethyl taurate", "copolymer", "cyclopentasiloxane", "cyclohexasiloxane", "glycolic acid", "sodium hydroxide", "hydroxypinacolone retinoate"]];
+/* ---- Stockage des comptes (localStorage si dispo, sinon mémoire) ---- */
+let memStore = {};
+function store(){ try{ return JSON.parse(localStorage.getItem("ds_users")||"{}"); }catch(e){ return memStore; } }
+function save(u){ try{ localStorage.setItem("ds_users", JSON.stringify(u)); }catch(e){ memStore = u; } }
+(function seed(){ const u = store();
+  if(!u["demo@dermasense.ma"]){
+    u["demo@dermasense.ma"] = {name:"Salma Demo", pass:"demo123", sexe:"Femme", age:27, peau:4, budget:350};
+    save(u);
+  }})();
+
+let currentUser = null, currentFilter = "all", currentView = "reco";
+
+function switchTab(t){
+  document.getElementById("tabLogin").classList.toggle("on", t==="login");
+  document.getElementById("tabSignup").classList.toggle("on", t==="signup");
+  document.getElementById("formLogin").style.display  = t==="login" ? "block":"none";
+  document.getElementById("formSignup").style.display = t==="signup"? "block":"none";
+}
+
+function doSignup(e){
+  e.preventDefault();
+  const email = suEmail.value.trim().toLowerCase();
+  const users = store();
+  if(users[email]){ suErr.textContent = "Un compte existe déjà avec cet e-mail."; return false; }
+  users[email] = { name:suName.value.trim(), pass:suPass.value, sexe:suSexe.value,
+                   age:+suAge.value, peau:+suPeau.value, budget:+suBudget.value, _newUser:true };
+  save(users);
+  login(email, users[email]);
+  return false;
+}
+
+function doLogin(e){
+  e.preventDefault();
+  const email = liEmail.value.trim().toLowerCase();
+  const u = store()[email];
+  if(!u || u.pass !== liPass.value){ liErr.textContent = "E-mail ou mot de passe incorrect."; return false; }
+  login(email, u);
+  return false;
+}
+
+function login(email, u){
+  currentUser = {...u, email};
+  document.getElementById("pageAuth").classList.remove("active");
+  document.getElementById("pageApp").classList.add("active");
+  avInit.textContent = u.name.charAt(0).toUpperCase();
+  profInfo.textContent = `${u.name} · ${u.sexe}, ${u.age} ans · peau ${SKINS[u.peau].toLowerCase()}`;
+  hello.textContent = `Bonjour ${u.name.split(" ")[0]} ✨`;
+  currentView = "reco";
+  currentBudgetMax = 999;
+  const sl = document.getElementById("budgetSlider");
+  if(sl){ sl.value = 370; document.getElementById("budgetVal").textContent = "Tout"; }
+  const rb = document.getElementById("routineBtn");
+  if(rb) rb.textContent = "❤ Ma routine";
+  document.getElementById("filters").style.display = "flex";
+  renderFilters(); render();
+  recordHistory();
+  document.getElementById("chatFab").style.display = "block";
+  maybeShowOnboarding();
+}
+
+function logout(){
+  currentUser = null;
+  document.getElementById("chatFab").style.display = "none";
+  document.getElementById("chatWin").style.display = "none";
+  document.getElementById("pageApp").classList.remove("active");
+  document.getElementById("pageAuth").classList.add("active");
+}
+
+/* ---- Moteur de recommandation (reproduit le score du modèle B) ---- */
+function scoreProduct(p, u){
+  const compat = p.k[u.peau];
+  const prixMAD = madPrice(p.p);
+  const abordable = prixMAD <= u.budget * 1.2 ? 1 : 0;
+  let s = 2.2*compat + 1.4*abordable + 0.9*(p.r >= 4.2 ? 1 : 0);
+  if(u.age > 50 && prixMAD > 100) s -= 0.4;        // tolérance prix observée chez 51-70
+  if(u.age < 30 && p.c === "Sun protect") s += 0.2; // prévention précoce
+  if(u.age >= 30 && p.c === "Treatment") s += 0.2;  // anti-âge ciblé
+  return s;
+}
+
+function renderFilters(){
+  const f = document.getElementById("filters");
+  f.innerHTML = `<button class="chip on" data-c="all" onclick="setFilter('all',this)">Tout</button>` +
+    Object.entries(CATS).map(([k,v]) =>
+      `<button class="chip" data-c="${k}" onclick="setFilter('${k}',this)">${v}</button>`).join("");
+}
+function setFilter(c, el){
+  currentFilter = c;
+  document.querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));
+  el.classList.add("on"); render();
+}
+
+const CAT_IMG = {
+  "Cleanser":    {g:"linear-gradient(135deg,#cce7f5,#89d8d3)", em:"🧴"},
+  "Eye cream":   {g:"linear-gradient(135deg,#ede0f9,#c3a6e8)", em:"✨"},
+  "Face Mask":   {g:"linear-gradient(135deg,#fce4ec,#f8bbd0)", em:"🧖"},
+  "Moisturizer": {g:"linear-gradient(135deg,#e0f7f0,#b2dfdb)", em:"💧"},
+  "Sun protect": {g:"linear-gradient(135deg,#fff9c4,#ffe082)", em:"☀️"},
+  "Treatment":   {g:"linear-gradient(135deg,#f3e5f5,#ce93d8)", em:"💊"},
+};
+function prodImg(cat, brand){
+  const st = CAT_IMG[cat] || CAT_IMG["Moisturizer"];
+  return `<div class="prod-img" style="background:${st.g}">
+    <span class="prod-emoji">${st.em}</span>
+    <div class="brand-tag">${brand}</div>
+  </div>`;
+}
+
+function render(){
+  const u = currentUser;
+  const acc = store()[u.email] || {};
+  const favs = acc.favs || [];
+  const avoid = acc.avoid || [];
+  let list = PRODUCTS.map((p, i) => ({...p, i, s:scoreProduct(p,u)}));
+  if(currentView === "routine"){
+    list = list.filter(p => favs.includes(p.i));
+    const ORDER = {"Cleanser":1,"Treatment":2,"Eye cream":3,"Moisturizer":4,"Sun protect":5,"Face Mask":6};
+    list.sort((a, b) => ORDER[a.c] - ORDER[b.c]);
+    banner.innerHTML = (list.length
+      ? `❤ <b>Ma routine</b> — ${list.length} favori(s), classés dans l'ordre d'application : <b>nettoyage → sérum → yeux → hydratation → solaire → masque</b>. `
+      : `❤ <b>Ma routine</b> est vide pour l'instant : clique sur le cœur d'un produit recommandé pour l'ajouter. `)
+      + (list.length ? `<button onclick="exportRoutine()" style="border:none;background:#fff;color:var(--plum);border-radius:9px;padding:6px 12px;font-weight:700;cursor:pointer;font-size:12px">🖨 Exporter en PDF</button>` : "");
+    subline.textContent = "Tes produits favoris, organisés en routine de soin.";
+  } else {
+    list = list.filter(p => p.s >= 2.4).sort((a, b) => b.s - a.s);
+    if(currentFilter !== "all") list = list.filter(p => p.c === currentFilter);
+    if(currentBudgetMax < 370) list = list.filter(p => madPrice(p.p) <= currentBudgetMax);
+    const q = (document.getElementById("searchBox").value || "").trim().toLowerCase();
+    if(q) list = list.filter(p => p.n.toLowerCase().includes(q) || p.b.toLowerCase().includes(q));
+    banner.innerHTML = `Notre modèle IA a analysé <b>1 472 produits</b> et retenu <b>${list.length} soins</b> compatibles
+      avec votre profil (<b>${u.sexe}, ${u.age} ans, peau ${SKINS[u.peau].toLowerCase()}</b>,
+      budget ≤ <b>${u.budget} MAD</b>).`;
+    subline.textContent = "Classés par score de compatibilité prédite — modèle Gradient Boosting.";
+  }
+  grid.innerHTML = list.map(p => {
+    const mad = madPrice(p.p).toLocaleString("fr-MA");
+    const high = p.s >= 4;
+    const fav = favs.includes(p.i);
+    const inCmp = compareSet.includes(p.i);
+    const toks = INGT[p.i] || [];
+    const alerts = avoid.filter(a => toks.some(t => t.includes(a)));
+    let dupe = "";
+    (SIMS[p.i] || []).forEach(x => {
+      const dp = madPrice(x.p), mp = madPrice(p.p);
+      if(dp <= mp * 0.8 && !dupe){
+        dupe = `<span class="dupebadge">💡 Dupe : ${x.n.slice(0,30)}… à −${Math.round(100*(1-dp/mp))} %</span>`;
+      }
+    });
+    return `<div class="prod" style="cursor:pointer" onclick="openDetail(${p.i})">
+      ${prodImg(p.c, p.b)}
+      <button class="favbtn ${fav?"on":""}" title="${fav?"Retirer de":"Ajouter à"} ma routine" onclick="event.stopPropagation();toggleFav(${p.i})">♥</button>
+      <button class="cmpbtn ${inCmp?"on":""}" title="Comparer" onclick="event.stopPropagation();toggleCmp(${p.i})">⚖</button>
+      <span class="cat">${CATS[p.c]}</span>
+      <span class="pname">${p.n}</span>
+      <span class="pbrand">${p.b}</span>
+      <span class="match ${high?"m-high":"m-med"}">${high?"★ Très adapté":"Adapté"} · score ${p.s.toFixed(1)}</span>
+      ${natBadge(p.nat)}
+      ${alerts.length ? `<span class="warnbadge">⚠ Contient : ${alerts.slice(0,3).join(", ")}</span>` : ""}
+      ${dupe}
+      <div class="meta"><span class="price">${mad} MAD</span>
+      <span class="stars">★ ${p.r.toFixed(1)}/5</span></div>
+      ${simBlock(p.i)}
+    </div>`;
+  }).join("") || `<p style="color:var(--muted)">Aucun produit ne correspond à ce filtre pour votre profil.</p>`;
+}
+
+/* ---- Formules similaires (similarité cosinus TF-IDF des ingrédients,
+        pré-calculée par le pipeline NLP sur les 1 472 produits) ---- */
+function simBlock(i){
+  const s = SIMS[i] || [];
+  if(!s.length) return "";
+  const items = s.map(x => `<div><b>${x.n}</b><br>${x.b} · ${madPrice(x.p).toLocaleString("fr-MA")} MAD · <span class="simscore">${x.s}% de similarité</span></div>`).join("");
+  return `<button class="simbtn" onclick="toggleSims(${i})">🧪 Formules similaires (NLP)</button><div class="simpanel" id="sims-${i}" style="display:none">${items}</div>`;
+}
+function toggleSims(i){
+  const el = document.getElementById("sims-" + i);
+  el.style.display = el.style.display === "none" ? "flex" : "none";
+}
+
+/* ================== ANALYSEUR INCI (NLP côté client) ================== */
+const SYNTH_M = ["paraben","peg-","ppg-","dimethicone","siloxane","silicone","acrylate",
+  "copolymer","polymer","sulfate","petrolatum","paraffin","bht","edta","phenoxyethanol",
+  "triethanolamine","polyethylene","nylon","fragrance","parfum","alcohol denat","talc",
+  "microcrystalline","polysorbate"];
+const NAT_M = ["extract","oil","butter","seed","leaf","flower","root","fruit","aloe",
+  "algae","honey","shea","juice","clay","sea ","vinegar","water","glycerin","vitamin","tocopherol"];
+const IRRIT_M = ["fragrance","parfum","alcohol denat","denatured alcohol","limonene",
+  "linalool","citronellol","geraniol","eugenol","citral","menthol","peppermint",
+  "eucalyptus","sodium lauryl sulfate","sodium laureth sulfate","witch hazel"];
+
+function tokenize(txt){
+  return txt.toLowerCase().split(",").map(t => t.trim().replace(/\.$/, "")).filter(t => t.length > 1);
+}
+function natFromTokens(toks){
+  if(!toks.length) return 50;
+  const syn = toks.filter(t => SYNTH_M.some(m => t.includes(m))).length;
+  const nat = toks.filter(t => NAT_M.some(m => t.includes(m))).length;
+  return Math.max(5, Math.min(95, Math.round(50 + 60*nat/toks.length - 80*syn/toks.length)));
+}
+function jaccard(a, b){
+  const A = new Set(a), B = new Set(b);
+  let inter = 0;
+  A.forEach(x => { if(B.has(x)) inter++; });
+  return inter / (A.size + B.size - inter || 1);
+}
+function openAnalyzer(){ document.getElementById("anaOverlay").style.display = "flex"; }
+function closeM(id){ document.getElementById(id).style.display = "none"; }
+function analyzeINCI(){
+  const toks = tokenize(document.getElementById("anaInput").value);
+  const res = document.getElementById("anaRes");
+  if(toks.length < 3){ res.innerHTML = `<div class="resbox">Colle au moins quelques ingrédients séparés par des virgules 🙂</div>`; return; }
+  const nat = natFromTokens(toks);
+  const irritants = toks.filter(t => IRRIT_M.some(m => t.includes(m)));
+  const risk = irritants.length === 0 ? ["Faible", "#1e7e46"] :
+               (irritants.length <= 2 ? ["Modéré", "#b07c1f"] : ["Élevé", "#a94442"]);
+  const sims = PRODUCTS.map((p, i) => ({p, i, j: jaccard(toks, INGT[i] || [])}))
+    .filter(x => x.j > 0.04).sort((a, b) => b.j - a.j).slice(0, 3);
+  res.innerHTML = `<div class="resbox">
+    <b>${toks.length} ingrédients analysés</b><br><br>
+    🌿 <b>Naturalité : ${nat}/100</b><br>
+    ⚠ <b>Risque peau sensible : <span style="color:${risk[1]}">${risk[0]}</span></b>
+    ${irritants.length ? "<br><span style='font-size:12px'>Irritants potentiels détectés : " + irritants.slice(0,5).join(", ") + "</span>" : ""}
+    <br><br><b>Produits du catalogue à la composition proche :</b><br>
+    ${sims.length ? sims.map(x => `• ${x.p.n} (${x.p.b}) — ${Math.round(x.j*100)} % d'ingrédients communs, ${madPrice(x.p.p)} MAD`).join("<br>") : "Aucune correspondance significative."}
+  </div>`;
+}
+
+/* ================== INSIGHTS (tableau de bord) ================== */
+function bar(lab, val, max, suffix){
+  const w = Math.round(100 * val / (max || 1));
+  return `<div class="statrow"><span class="lab">${lab}</span>
+    <span class="barw"><span class="barf" style="width:${w}%"></span></span>
+    <span class="val">${val}${suffix || ""}</span></div>`;
+}
+function openInsights(){
+  const cats = {};
+  PRODUCTS.forEach(p => { (cats[p.c] = cats[p.c] || []).push(p.nat || 50); });
+  const natCat = Object.entries(cats).map(([c, arr]) =>
+    [CATS[c], Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)]);
+  const favCount = {};
+  const users = store();
+  Object.values(users).forEach(u => (u.favs || []).forEach(i => {
+    const c = CATS[PRODUCTS[i].c]; favCount[c] = (favCount[c] || 0) + 1;
+  }));
+  const favRows = Object.entries(favCount).sort((a, b) => b[1] - a[1]);
+  document.getElementById("insBody").innerHTML = `
+    <p style="font-size:12px;color:var(--muted)">Données : base clients d'étude (3 000 profils simulés) + activité locale de l'application.</p>
+    <h4 style="color:var(--rose);margin:12px 0 2px">Utilisateurs par sexe</h4>
+    ${bar("Femmes", 71.8, 100, " %")}${bar("Hommes", 28.2, 100, " %")}
+    <h4 style="color:var(--rose);margin:12px 0 2px">Utilisateurs par tranche d'âge</h4>
+    ${bar("16-25 ans", 953, 1029)}${bar("26-35 ans", 1029, 1029)}${bar("36-50 ans", 914, 1029)}${bar("51-70 ans", 104, 1029)}
+    <h4 style="color:var(--rose);margin:12px 0 2px">Naturalité moyenne du catalogue par catégorie</h4>
+    ${natCat.map(([c, v]) => bar(c, v, 100, "/100")).join("")}
+    <h4 style="color:var(--rose);margin:12px 0 2px">Catégories les plus ajoutées en favoris (cette application)</h4>
+    ${favRows.length ? favRows.map(([c, v]) => bar(c, v, favRows[0][1])).join("") : "<p style='font-size:12px;color:var(--muted)'>Aucun favori pour l'instant.</p>"}`;
+  document.getElementById("insOverlay").style.display = "flex";
+}
+
+/* ================== COMPARATEUR ================== */
+let compareSet = [];
+function toggleCmp(i){
+  const k = compareSet.indexOf(i);
+  if(k >= 0) compareSet.splice(k, 1);
+  else { if(compareSet.length >= 3){ alert("Maximum 3 produits à comparer."); return; } compareSet.push(i); }
+  const b = document.getElementById("cmpBar");
+  b.textContent = `⚖ Comparer (${compareSet.length})`;
+  b.style.display = compareSet.length ? "block" : "none";
+  render();
+}
+function openCompare(){
+  if(compareSet.length < 2){ alert("Sélectionne au moins 2 produits (icône ⚖ sur les cartes)."); return; }
+  const ps = compareSet.map(i => ({...PRODUCTS[i], i}));
+  const row = (lab, fn) => `<tr><td>${lab}</td>${ps.map(fn).join("")}</tr>`;
+  document.getElementById("cmpBody").innerHTML = `<table class="cmptable">
+    <tr><th></th>${ps.map(p => `<th>${p.n}<br><span style="font-weight:400">${p.b}</span></th>`).join("")}</tr>
+    ${row("Catégorie", p => `<td>${CATS[p.c]}</td>`)}
+    ${row("Prix", p => `<td><b>${madPrice(p.p)} MAD</b></td>`)}
+    ${row("Note utilisateurs", p => `<td>★ ${p.r.toFixed(1)}/5</td>`)}
+    ${row("Naturalité", p => `<td>🌿 ${p.nat || "—"}/100</td>`)}
+    ${row("Compatibilité (votre peau)", p => `<td>${p.k[currentUser.peau] ? "✔ Adapté" : "✘ Non étiqueté"}</td>`)}
+    ${row("Score IA (votre profil)", p => `<td><b>${scoreProduct(p, currentUser).toFixed(1)}</b></td>`)}
+  </table>`;
+  document.getElementById("cmpOverlay").style.display = "flex";
+}
+
+/* ================== EXPORT PDF DE MA ROUTINE ================== */
+function exportRoutine(){
+  const favs = (store()[currentUser.email].favs) || [];
+  const ORDER = {"Cleanser":1,"Treatment":2,"Eye cream":3,"Moisturizer":4,"Sun protect":5,"Face Mask":6};
+  const STEP = {"Cleanser":"Étape 1 — Nettoyage","Treatment":"Étape 2 — Sérum / Traitement",
+    "Eye cream":"Étape 3 — Contour des yeux","Moisturizer":"Étape 4 — Hydratation",
+    "Sun protect":"Étape 5 — Protection solaire","Face Mask":"Bonus — Masque (1-2×/semaine)"};
+  const list = favs.map(i => PRODUCTS[i]).sort((a, b) => ORDER[a.c] - ORDER[b.c]);
+  if(!list.length){ alert("Ta routine est vide : ajoute des favoris d'abord."); return; }
+  const w = window.open("", "_blank");
+  w.document.write(`<html><head><title>Ma routine DermaSense</title><style>
+    body{font-family:Segoe UI,sans-serif;color:#3a2433;padding:36px;max-width:640px;margin:auto}
+    h1{color:#7B2D62}h1 span{color:#C0567E}
+    .step{font-size:12px;font-weight:700;color:#C0567E;text-transform:uppercase;margin-top:18px}
+    .item{border:1px solid #f0dce8;border-radius:10px;padding:10px 14px;margin-top:5px}
+    .item b{font-size:14px}.muted{color:#9b7f90;font-size:12px}
+    footer{margin-top:28px;font-size:11px;color:#9b7f90;text-align:center}
+  </style></head><body>
+  <h1>Derma<span>Sense</span> — Ma routine</h1>
+  <p class="muted">${currentUser.name} · ${currentUser.sexe}, ${currentUser.age} ans · peau ${SKINS[currentUser.peau].toLowerCase()} · ${new Date().toLocaleDateString("fr-FR")}</p>
+  ${list.map(p => `<div class="step">${STEP[p.c]}</div>
+    <div class="item"><b>${p.n}</b> — ${p.b}<br>
+    <span class="muted">${madPrice(p.p)} MAD · ★ ${p.r.toFixed(1)}/5 · 🌿 naturalité ${p.nat || "—"}/100</span></div>`).join("")}
+  <footer>Recommandations générées par l'IA DermaSense — à adapter selon l'avis d'un professionnel.</footer>
+  </body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+/* ---- Score de naturalité (calculé par NLP sur la liste d'ingrédients) ---- */
+function natBadge(n){
+  if(n === undefined) return "";
+  const cls = n >= 65 ? "nat-high" : (n >= 45 ? "nat-mid" : "nat-low");
+  return `<span class="natbadge ${cls}">🌿 Naturalité ${n}/100</span>`;
+}
+
+/* ---- Favoris & page Ma routine ---- */
+function toggleFav(i){
+  const users = store(); const u = users[currentUser.email];
+  u.favs = u.favs || [];
+  const k = u.favs.indexOf(i);
+  if(k >= 0) u.favs.splice(k, 1); else u.favs.push(i);
+  save(users); render();
+}
+function toggleView(){
+  currentView = currentView === "reco" ? "routine" : "reco";
+  document.getElementById("routineBtn").textContent =
+    currentView === "routine" ? "← Recommandations" : "❤ Ma routine";
+  document.getElementById("filters").style.display =
+    currentView === "routine" ? "none" : "flex";
+  render();
+}
+
+/* ---- Historique des recommandations ---- */
+function recordHistory(){
+  const users = store(); const u = users[currentUser.email];
+  u.history = u.history || [];
+  const top = PRODUCTS.map((p, i) => ({...p, s:scoreProduct(p, currentUser)}))
+    .filter(p => p.s >= 2.4).sort((a, b) => b.s - a.s).slice(0, 3).map(p => p.n);
+  u.history.unshift({d: new Date().toLocaleString("fr-FR"),
+    p: `${u.sexe}, ${u.age} ans, peau ${SKINS[u.peau].toLowerCase()}, budget ${u.budget} MAD`,
+    top: top});
+  u.history = u.history.slice(0, 10);
+  save(users);
+}
+function fillHistory(){
+  const u = store()[currentUser.email];
+  const el = document.getElementById("histList");
+  const hist = (u && u.history) || [];
+  el.innerHTML = hist.length
+    ? hist.map(e => `<div class="histitem" style="font-size:11.5px"><b>${e.d}</b> — ${e.p}<br>Top 3 : ${e.top.join(" · ")}</div>`).join("")
+    : `<p style="font-size:12px;color:var(--muted)">Aucun historique pour l'instant.</p>`;
+}
+
+/* ---- Mini-quiz de diagnostic de peau ---- */
+function openQuiz(e){ if(e) e.preventDefault(); document.getElementById("quizOverlay").style.display = "flex"; }
+function closeQuiz(){ document.getElementById("quizOverlay").style.display = "none"; }
+function computeQuiz(){
+  const pts = [0, 0, 0, 0, 0];
+  let answered = 0;
+  ["q1", "q2", "q3", "q4"].forEach(q => {
+    const c = document.querySelector(`input[name="${q}"]:checked`);
+    if(!c) return;
+    answered++;
+    c.value.split("|").forEach(pair => {
+      const [t, v] = pair.split(":");
+      pts[+t] += +v;
+    });
+  });
+  const res = document.getElementById("quizRes");
+  if(answered < 4){ res.textContent = "Réponds aux 4 questions 🙂"; return; }
+  const best = pts.indexOf(Math.max(...pts));
+  res.textContent = `Résultat : peau ${SKINS[best].toLowerCase()} ✔ (reporté dans le formulaire)`;
+  const sel = document.getElementById("suPeau");
+  if(sel) sel.value = String(best);
+  setTimeout(closeQuiz, 1600);
+}
+
+/* ---- Modification du profil utilisateur ---- */
+function openProfile(){
+  if(!currentUser) return;
+  document.getElementById("pfName").value = currentUser.name;
+  document.getElementById("pfSexe").value = currentUser.sexe;
+  document.getElementById("pfAge").value = currentUser.age;
+  document.getElementById("pfPeau").value = currentUser.peau;
+  document.getElementById("pfBudget").value = currentUser.budget;
+  document.getElementById("pfAvoid").value = (currentUser.avoid || []).join(", ");
+  fillHistory();
+  document.getElementById("profOverlay").style.display = "flex";
+}
+function closeProfile(){ document.getElementById("profOverlay").style.display = "none"; }
+function saveProfile(e){
+  e.preventDefault();
+  const users = store();
+  const u = users[currentUser.email];
+  u.name = document.getElementById("pfName").value.trim();
+  u.sexe = document.getElementById("pfSexe").value;
+  u.age = +document.getElementById("pfAge").value;
+  u.peau = +document.getElementById("pfPeau").value;
+  u.budget = +document.getElementById("pfBudget").value;
+  u.avoid = tokenize(document.getElementById("pfAvoid").value);
+  save(users);
+  closeProfile();
+  login(currentUser.email, u);   // recharge le profil et recalcule les recommandations
+  return false;
+}
+
+/* ================== FEATURE 1 : MODAL DÉTAIL PRODUIT ================== */
+function openDetail(i){
+  const p = PRODUCTS[i];
+  const acc = store()[currentUser.email] || {};
+  const favs = acc.favs || [];
+  const fav = favs.includes(i);
+  const mad = madPrice(p.p).toLocaleString("fr-MA");
+  const toks = INGT[i] || [];
+  const avoid = acc.avoid || [];
+  const alerts = avoid.filter(a => toks.some(t => t.includes(a)));
+  const sims = SIMS[i] || [];
+  const skinLabels = ["Mixte","Sèche","Normale","Grasse","Sensible"];
+  const ingHTML = toks.length
+    ? toks.map(t => {
+        const isAlert = alerts.some(a => t.includes(a));
+        const isIrrit = !isAlert && IRRIT_M.some(m => t.includes(m));
+        const isNat = !isAlert && !isIrrit && NAT_M.some(m => t.includes(m));
+        const cls = isAlert ? "ing-alert" : isIrrit ? "ing-irrit" : isNat ? "ing-nat" : "";
+        return `<span class="ing-tag ${cls}">${t}</span>`;
+      }).join("")
+    : `<span style="color:var(--muted);font-size:12px">Ingrédients non disponibles pour ce produit.</span>`;
+  document.getElementById("detailModal").innerHTML = `
+    <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;margin-bottom:16px">
+      <div class="detail-img">${prodImg(p.c, p.b)}</div>
+      <div style="flex:1;min-width:180px">
+        <span class="cat">${CATS[p.c]}</span>
+        <h3 style="margin:5px 0 3px;font-size:18px;line-height:1.3">${p.n}</h3>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:10px;font-weight:600">${p.b}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
+          <span class="price" style="font-size:20px">${mad} MAD</span>
+          <span class="stars" style="font-size:14px">★ ${p.r.toFixed(1)}/5</span>
+          ${natBadge(p.nat)}
+        </div>
+        ${alerts.length ? `<div class="warnbadge" style="margin-bottom:8px">⚠ Contient des ingrédients à éviter : ${alerts.join(", ")}</div>` : ""}
+        <button class="btn2" style="width:auto;padding:10px 18px;margin-top:4px" onclick="toggleFav(${i});openDetail(${i})">
+          ${fav ? "💔 Retirer de ma routine" : "♥ Ajouter à ma routine"}
+        </button>
+      </div>
+    </div>
+    <h4 style="color:var(--rose);margin:0 0 8px">Compatibilité par type de peau</h4>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+      ${skinLabels.map((l,k) => `<span class="compat-tag" style="background:${p.k[k]?"#e9f7ef":"#fdeaea"};color:${p.k[k]?"#1e7e46":"#a94442"}">${p.k[k]?"✔":"✘"} ${l}</span>`).join("")}
+    </div>
+    <h4 style="color:var(--rose);margin:0 0 6px">Ingrédients INCI (${toks.length})</h4>
+    <div style="background:#fdf4f8;border-radius:10px;padding:10px 12px;max-height:130px;overflow-y:auto;margin-bottom:${sims.length?16:0}px">
+      ${ingHTML}
+    </div>
+    ${sims.length ? `
+    <h4 style="color:var(--rose);margin:0 0 8px">🧪 Formules similaires (NLP — TF-IDF)</h4>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      ${sims.map(x=>`<div style="background:#fdf4f8;border-radius:10px;padding:8px 12px;font-size:12.5px">
+        <b>${x.n}</b> — ${x.b}
+        <span style="float:right;color:var(--muted)">${madPrice(x.p)} MAD · <span class="simscore">${x.s}%</span></span>
+      </div>`).join("")}
+    </div>` : ""}
+    <button class="btncancel" style="margin-top:16px" onclick="closeM('detailOverlay')">Fermer</button>`;
+  document.getElementById("detailOverlay").style.display = "flex";
+}
+
+/* ================== FEATURE 2 : SLIDER BUDGET ================== */
+let currentBudgetMax = 999;
+function updateBudgetSlider(){
+  currentBudgetMax = +document.getElementById("budgetSlider").value;
+  document.getElementById("budgetVal").textContent =
+    currentBudgetMax >= 370 ? "Tout" : currentBudgetMax + " MAD";
+  render();
+}
+
+/* ---- DermaBot : assistant conversationnel à règles (100 % hors ligne) ---- */
+const ING_INFO = {
+  "rétinol": "Le rétinol (vitamine A) stimule le renouvellement cellulaire et le collagène : référence anti-âge et anti-imperfections. À introduire progressivement (2-3 soirs/semaine), toujours avec un SPF le matin. Déconseillé pendant la grossesse.",
+  "retinol": "Le rétinol (vitamine A) stimule le renouvellement cellulaire et le collagène : référence anti-âge et anti-imperfections. À introduire progressivement, toujours avec un SPF le matin.",
+  "niacinamide": "La niacinamide (vitamine B3) régule le sébum, resserre les pores, apaise les rougeurs et renforce la barrière cutanée. Très bien tolérée, idéale peaux mixtes à grasses.",
+  "hyaluronique": "L'acide hyaluronique retient jusqu'à 1 000 fois son poids en eau : hydratation et effet repulpant immédiats. Convient à tous les types de peau, à appliquer sur peau humide.",
+  "vitamine c": "La vitamine C est un antioxydant éclat : elle unifie le teint, atténue les taches et protège de la pollution. À utiliser le matin, suivie d'un SPF.",
+  "salicylique": "L'acide salicylique (BHA) exfolie à l'intérieur des pores : parfait contre points noirs et imperfections des peaux grasses. À doser progressivement.",
+  "glycolique": "L'acide glycolique (AHA) exfolie en surface pour un teint plus lisse et lumineux. À utiliser le soir, avec SPF obligatoire le lendemain.",
+  "céramide": "Les céramides sont les « ciments » naturels de la barrière cutanée : ils réparent et protègent les peaux sèches et sensibilisées.",
+  "parfum": "Le parfum (fragrance) est l'une des premières causes d'irritation et d'allergie cosmétique. Notre modèle NLP le pénalise pour les peaux sensibles : préfère les formules « sans parfum ».",
+  "alcool": "L'alcool dénaturé (alcohol denat.) donne un fini léger mais peut dessécher et irriter. À éviter pour les peaux sèches ou sensibles ; sans danger occasionnel pour les peaux grasses."
+};
+const QUICKS = ["Recommande-moi une routine", "C'est quoi le rétinol ?", "Produits pas chers", "Analyser mes ingrédients"];
+let chatStarted = false;
+
+function toggleChat(){
+  const w = document.getElementById("chatWin");
+  const open = w.style.display !== "flex";
+  w.style.display = open ? "flex" : "none";
+  if(open && !chatStarted){
+    chatStarted = true;
+    addMsg("Bonjour " + (currentUser ? currentUser.name.split(" ")[0] : "") + " ! Je suis DermaBot 🌸\nJe peux te recommander des soins adaptés à ton profil, t'expliquer un ingrédient (rétinol, niacinamide…) ou t'aider à utiliser l'application.", "bot");
+    showQuick();
+  }
+}
+function showQuick(){
+  document.getElementById("chatQuick").innerHTML =
+    QUICKS.map((q, i) => `<button class="qbtn" onclick="quickAsk(${i})">${q}</button>`).join("");
+}
+function quickAsk(i){ handleUser(QUICKS[i]); }
+function chatSubmit(e){
+  e.preventDefault();
+  const v = document.getElementById("chatInput").value.trim();
+  if(v){ handleUser(v); document.getElementById("chatInput").value = ""; }
+  return false;
+}
+function handleUser(q){
+  addMsg(q, "user");
+  setTimeout(() => addMsg(botReply(q), "bot"), 400);
+}
+function addMsg(t, who){
+  const b = document.getElementById("chatBody");
+  const d = document.createElement("div");
+  d.className = "msg " + who; d.textContent = t;
+  b.appendChild(d); b.scrollTop = b.scrollHeight;
+}
+
+/* ================== FEATURE 4 : PWA ================== */
+let pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); pwaPrompt = e;
+  const banner = document.getElementById("pwaBanner");
+  if(banner) banner.style.display = "flex";
+});
+function pwInstall(){
+  if(!pwaPrompt) return;
+  pwaPrompt.prompt();
+  pwaPrompt.userChoice.then(() => {
+    document.getElementById("pwaBanner").style.display = "none";
+    pwaPrompt = null;
+  });
+}
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+/* ================== FEATURE 5 : ONBOARDING ================== */
+function startOnboarding(){
+  document.getElementById("onbOverlay").style.display = "none";
+  openQuiz(null);
+}
+function skipOnboarding(){
+  document.getElementById("onbOverlay").style.display = "none";
+}
+function maybeShowOnboarding(){
+  const u = store()[currentUser.email];
+  if(u && u._newUser){
+    const users = store();
+    delete users[currentUser.email]._newUser;
+    save(users);
+    setTimeout(() => {
+      document.getElementById("onbOverlay").style.display = "flex";
+    }, 800);
+  }
+}
+
+/* ================== FEATURE 6 : INSIGHTS CHART.JS ================== */
+let insCharts = [];
+function destroyCharts(){ insCharts.forEach(c => c.destroy()); insCharts = []; }
+function openInsights(){
+  destroyCharts();
+  const catCounts = {}, catNat = {}, catPrices = {};
+  PRODUCTS.forEach(p => {
+    catCounts[p.c] = (catCounts[p.c] || 0) + 1;
+    catNat[p.c] = catNat[p.c] || [];
+    catNat[p.c].push(p.nat || 50);
+    catPrices[p.c] = catPrices[p.c] || [];
+    catPrices[p.c].push(madPrice(p.p));
+  });
+  const cats = Object.keys(catCounts);
+  const catLabels = cats.map(c => CATS[c]);
+  const natAvg = cats.map(c => Math.round(catNat[c].reduce((a,b)=>a+b,0)/catNat[c].length));
+  const priceAvg = cats.map(c => Math.round(catPrices[c].reduce((a,b)=>a+b,0)/catPrices[c].length));
+  const PALETTE = ["#7B2D62","#C0567E","#E89A8D","#F2C57C","#89d8d3","#ce93d8"];
+  const favCount = {};
+  const users = store();
+  Object.values(users).forEach(u => (u.favs || []).forEach(i => {
+    if(PRODUCTS[i]){ const c = CATS[PRODUCTS[i].c]; favCount[c] = (favCount[c] || 0) + 1; }
+  }));
+  document.getElementById("insBody").innerHTML = `
+    <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Base : 3 000 profils simulés + activité locale de l'application.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex-wrap:wrap">
+      <div class="chart-wrap"><h4>Répartition du catalogue</h4><canvas id="chPie"></canvas></div>
+      <div class="chart-wrap"><h4>Utilisateurs par tranche d'âge</h4><canvas id="chAge"></canvas></div>
+    </div>
+    <div class="chart-wrap" style="margin-top:0"><h4>Naturalité moyenne par catégorie (/100)</h4><canvas id="chNat"></canvas></div>
+    <div class="chart-wrap"><h4>Prix moyen par catégorie (MAD)</h4><canvas id="chPrice"></canvas></div>
+    <div class="chart-wrap"><h4>Satisfaction IA par modèle</h4><canvas id="chModel"></canvas></div>`;
+  document.getElementById("insOverlay").style.display = "flex";
+  const defs = {responsive:true, plugins:{legend:{labels:{font:{size:11},boxWidth:14}}}};
+  insCharts.push(new Chart(document.getElementById("chPie"), {
+    type:"doughnut",
+    data:{labels:catLabels, datasets:[{data:cats.map(c=>catCounts[c]), backgroundColor:PALETTE, borderWidth:2, borderColor:"#fff"}]},
+    options:{...defs}
+  }));
+  insCharts.push(new Chart(document.getElementById("chAge"), {
+    type:"bar",
+    data:{labels:["16-25 ans","26-35 ans","36-50 ans","51-70 ans"],
+          datasets:[{label:"Clients",data:[953,1029,914,104],backgroundColor:PALETTE.slice(0,4),borderRadius:8}]},
+    options:{...defs, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,grid:{color:"#f4e4ec"}}}}
+  }));
+  insCharts.push(new Chart(document.getElementById("chNat"), {
+    type:"bar",
+    data:{labels:catLabels, datasets:[{label:"Naturalité /100",data:natAvg,
+          backgroundColor:natAvg.map(v=>v>=65?"#1e7e46":v>=45?"#b07c1f":"#a94442"),borderRadius:8}]},
+    options:{...defs, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,max:100,grid:{color:"#f4e4ec"}}}}
+  }));
+  insCharts.push(new Chart(document.getElementById("chPrice"), {
+    type:"bar",
+    data:{labels:catLabels, datasets:[{label:"Prix moyen (MAD)",data:priceAvg,
+          backgroundColor:"#C0567E",borderRadius:8}]},
+    options:{...defs, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,grid:{color:"#f4e4ec"}}}}
+  }));
+  insCharts.push(new Chart(document.getElementById("chModel"), {
+    type:"bar",
+    data:{labels:["Modèle A\n(peau sensible)","Modèle B\n(satisfaction)"],
+          datasets:[{label:"AUC",data:[0.677,0.899],backgroundColor:["#E89A8D","#7B2D62"],borderRadius:10},
+                    {label:"Accuracy",data:[null,0.811],backgroundColor:["transparent","#F2C57C"],borderRadius:10}]},
+    options:{...defs, scales:{y:{beginAtZero:true,max:1,ticks:{format:{style:"percent"}},grid:{color:"#f4e4ec"}}}}
+  }));
+}
+function recoFor(s){
+  const map = {"hydratant":"Moisturizer","crème":"Moisturizer","creme":"Moisturizer",
+    "nettoyant":"Cleanser","masque":"Face Mask","sérum":"Treatment","serum":"Treatment",
+    "traitement":"Treatment","anti-âge":"Treatment","yeux":"Eye cream","contour":"Eye cream",
+    "cerne":"Eye cream","solaire":"Sun protect","soleil":"Sun protect","spf":"Sun protect"};
+  let cat = null;
+  for(const k in map) if(s.includes(k)){ cat = map[k]; break; }
+  let list = PRODUCTS.map((p, i) => ({...p, s:scoreProduct(p, currentUser)})).filter(p => p.s >= 2.4);
+  if(cat) list = list.filter(p => p.c === cat);
+  list.sort((a, b) => b.s - a.s);
+  if(!list.length) return "Je ne trouve pas de produit adapté dans cette catégorie pour ton profil 😕 Essaie une autre catégorie.";
+  const top = list.slice(0, 3).map(p => "• " + p.n + " (" + p.b + ") — " + madPrice(p.p).toLocaleString("fr-MA") + " MAD, ★" + p.r.toFixed(1)).join("\n");
+  return "Voici mes recommandations" + (cat ? " — " + CATS[cat] : "") + " pour ton profil (" + currentUser.sexe + ", " + currentUser.age + " ans, peau " + SKINS[currentUser.peau].toLowerCase() + ") :\n" + top + "\n\nClasse établie avec le même score que le moteur ML 😉";
+}
+function botReply(q){
+  const s = q.toLowerCase();
+  for(const k in ING_INFO) if(s.includes(k)) return ING_INFO[k];
+  if(/(bonjour|salut|hello|coucou)/.test(s)) return "Bonjour ! 😊 Demande-moi par exemple : « recommande-moi un hydratant », « c'est quoi la niacinamide ? » ou « produits pas chers ».";
+  if(/(merci|super|parfait|génial)/.test(s)) return "Avec plaisir ! N'hésite pas si tu as d'autres questions 🌸";
+  if(/sensible/.test(s)) return "Pour une peau sensible 🌿 : formules courtes, sans parfum ni alcool dénaturé, ingrédients apaisants (céramides, niacinamide, panthénol). Filtre « Tout » + ton profil « peau sensible » : le moteur ne te propose déjà que des produits étiquetés compatibles.";
+  if(/(pas cher|moins cher|petit budget|économique|eco)/.test(s)){
+    const cheap = PRODUCTS.map(p => ({...p, s:scoreProduct(p, currentUser)})).filter(p => p.s >= 2.4).sort((a, b) => a.p - b.p).slice(0, 3)
+      .map(p => "• " + p.n + " (" + p.b + ") — " + madPrice(p.p).toLocaleString("fr-MA") + " MAD").join("\n");
+    return "Les meilleures options économiques adaptées à ton profil 💰 :\n" + cheap;
+  }
+  if(/(similaire|dupe|alternative)/.test(s)) return "Sur chaque carte produit, clique sur « 🧪 Formules similaires (NLP) » : je compare les listes d'ingrédients par similarité cosinus (TF-IDF) pour te montrer les formules les plus proches — souvent moins chères !";
+  if(/(compte|inscription|connexion|mot de passe|profil)/.test(s)) return "Ton profil (sexe, âge, type de peau, budget) est défini à l'inscription et alimente directement le moteur de recommandation. Modifie-le via ⚙ Mon profil dans la barre du haut.";
+  if(/(analys|inci|ingrédient|ingredient|formule|composition)/.test(s)){
+    setTimeout(() => { toggleChat(); openAnalyzer(); }, 300);
+    return "J'ouvre l'analyseur INCI pour toi 🧪\nColle la liste d'ingrédients (au dos de l'emballage) : naturalité, irritants potentiels, et produits du catalogue à la formule similaire seront calculés instantanément !";
+  }
+  if(/(comparateur|compare|comparer|différence)/.test(s)) return "Utilise l'icône ⚖ sur les cartes produits pour les sélectionner (jusqu'à 3), puis clique sur le bouton bleu « Comparer » en bas à gauche pour voir le tableau comparatif.";
+  if(/(favori|routine|ajouter|enregistrer)/.test(s)) return "Clique sur le ♥ sur n'importe quelle carte produit pour l'ajouter à ta routine. Accède à ta routine complète via le bouton « ❤ Ma routine » en haut.";
+  if(/(recommande|conseil|produit|soin|hydratant|crème|creme|nettoyant|masque|sérum|serum|yeux|contour|solaire|soleil|spf|anti)/.test(s)) return recoFor(s);
+  return "Je n'ai pas bien compris 🤔 Essaie : « recommande-moi un sérum », « c'est quoi la niacinamide ? », « produits pas chers » ou « analyser mes ingrédients ».";
+}
+</script>
+</body>
+</html>

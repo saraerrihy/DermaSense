@@ -1,0 +1,205 @@
+{
+  "dataset": {
+    "lignes": 1472,
+    "colonnes": 11,
+    "manquants": 0,
+    "doublons": 0,
+    "marques": 116,
+    "prix_moyen": 55.58,
+    "prix_median": 42.5,
+    "rank_moyen": 4.15,
+    "categories": {
+      "Moisturizer": 298,
+      "Cleanser": 281,
+      "Face Mask": 266,
+      "Treatment": 248,
+      "Eye cream": 209,
+      "Sun protect": 170
+    },
+    "outliers_prix": 91,
+    "seuil_outlier": 125.0
+  },
+  "clients": {
+    "n": 3000,
+    "femmes_pct": 71.8,
+    "age_moyen": 31.2,
+    "tranches": {
+      "16-25": 953,
+      "26-35": 1029,
+      "36-50": 914,
+      "51-70": 104
+    }
+  },
+  "interactions": {
+    "n": 12000,
+    "taux_satisfaction": 55.6
+  },
+  "modeleA_cible": {
+    "positifs": 756,
+    "negatifs": 716,
+    "taux_positif": 51.4
+  },
+  "modeleA": {
+    "Régression Logistique": {
+      "accuracy": 0.614,
+      "precision": 0.622,
+      "rappel": 0.638,
+      "f1": 0.63,
+      "auc": 0.665
+    },
+    "Random Forest": {
+      "accuracy": 0.627,
+      "precision": 0.614,
+      "rappel": 0.743,
+      "f1": 0.673,
+      "auc": 0.689
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.641,
+      "precision": 0.655,
+      "rappel": 0.638,
+      "f1": 0.647,
+      "auc": 0.673
+    }
+  },
+  "modeleA_best": "Random Forest",
+  "modeleA_cm": [
+    [
+      72,
+      71
+    ],
+    [
+      39,
+      113
+    ]
+  ],
+  "modeleB": {
+    "Régression Logistique": {
+      "accuracy": 0.79,
+      "precision": 0.788,
+      "rappel": 0.851,
+      "f1": 0.818,
+      "auc": 0.87
+    },
+    "Random Forest": {
+      "accuracy": 0.799,
+      "precision": 0.805,
+      "rappel": 0.841,
+      "f1": 0.823,
+      "auc": 0.887
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.801,
+      "precision": 0.82,
+      "rappel": 0.823,
+      "f1": 0.822,
+      "auc": 0.895
+    }
+  },
+  "modeleB_best": "Random Forest",
+  "modeleB_cm": [
+    [
+      795,
+      271
+    ],
+    [
+      212,
+      1122
+    ]
+  ],
+  "sous_groupes_sexe": {
+    "Femme": {
+      "n": 1722,
+      "accuracy": 0.797,
+      "f1": 0.822,
+      "rappel": 0.847,
+      "taux_satisfaction_reel": 0.554
+    },
+    "Homme": {
+      "n": 678,
+      "accuracy": 0.802,
+      "f1": 0.824,
+      "rappel": 0.826,
+      "taux_satisfaction_reel": 0.56
+    }
+  },
+  "sous_groupes_age": {
+    "16-25": {
+      "n": 735,
+      "accuracy": 0.795,
+      "f1": 0.824,
+      "rappel": 0.831,
+      "taux_satisfaction_reel": 0.578
+    },
+    "26-35": {
+      "n": 825,
+      "accuracy": 0.789,
+      "f1": 0.814,
+      "rappel": 0.832,
+      "taux_satisfaction_reel": 0.555
+    },
+    "36-50": {
+      "n": 754,
+      "accuracy": 0.813,
+      "f1": 0.835,
+      "rappel": 0.862,
+      "taux_satisfaction_reel": 0.549
+    },
+    "51-70": {
+      "n": 86,
+      "accuracy": 0.802,
+      "f1": 0.785,
+      "rappel": 0.838,
+      "taux_satisfaction_reel": 0.43
+    }
+  },
+  "importance_top5": {
+    "num__Compat": 0.339,
+    "num__Budget": 0.157,
+    "num__Prix": 0.152,
+    "num__Rank": 0.117,
+    "num__Age": 0.115
+  },
+  "similarite_exemple": [
+    {
+      "Name": "Little Miss Miracle Limited-Edition Crème de la Mer",
+      "Brand": "LA MER",
+      "Label": "Moisturizer",
+      "Price": 325,
+      "Rank": 5.0,
+      "Similarite": 1.0
+    },
+    {
+      "Name": "Crème de la Mer Mini",
+      "Brand": "LA MER",
+      "Label": "Moisturizer",
+      "Price": 85,
+      "Rank": 4.1,
+      "Similarite": 1.0
+    },
+    {
+      "Name": "The Moisturizing Soft Lotion",
+      "Brand": "LA MER",
+      "Label": "Moisturizer",
+      "Price": 270,
+      "Rank": 3.6,
+      "Similarite": 0.385
+    },
+    {
+      "Name": "The Tonic",
+      "Brand": "LA MER",
+      "Label": "Cleanser",
+      "Price": 95,
+      "Rank": 4.1,
+      "Similarite": 0.38
+    },
+    {
+      "Name": "The Cleansing Micellar Water",
+      "Brand": "LA MER",
+      "Label": "Cleanser",
+      "Price": 95,
+      "Rank": 4.5,
+      "Similarite": 0.362
+    }
+  ]
+}
